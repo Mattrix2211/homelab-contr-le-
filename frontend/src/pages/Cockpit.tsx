@@ -10,15 +10,17 @@ import { SkeletonGrid } from "../components/Skeleton";
 import { ResourceDrawer, DrawerMetricRow } from "../components/ResourceDrawer";
 import { formatPercent, formatUptime } from "../lib/format";
 import { StatusBadge } from "../components/StatusBadge";
+import { QuickActionsPanel } from "../components/QuickActionsPanel";
 
 const CRITICAL_SERVICE_IDS = ["home-assistant", "adguard", "frigate", "npm", "prometheus", "truenas"];
 
 interface SectionDef {
-  id: "machines" | "services" | "resources";
+  id: "quickActions" | "machines" | "services" | "resources";
   label: string;
 }
 
 const DEFAULT_SECTIONS: SectionDef[] = [
+  { id: "quickActions", label: "Quick actions" },
   { id: "machines", label: "Machines" },
   { id: "services", label: "Critical services" },
   { id: "resources", label: "Global resources & activity" },
@@ -128,6 +130,7 @@ export function Cockpit() {
   const isVisible = (id: SectionDef["id"]) => sections.find((s) => s.id === id)?.visible !== false;
 
   const sectionElements: Record<SectionDef["id"], ReactNode> = {
+    quickActions: <QuickActionsPanel />,
     machines: (
       <div>
         <div className="section-title" style={{ marginBottom: 12 }}>Machines</div>

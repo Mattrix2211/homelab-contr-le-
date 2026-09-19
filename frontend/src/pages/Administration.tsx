@@ -5,6 +5,7 @@ import {
   useUsersList,
   useQuickActionsList,
   useRemoveQuickAction,
+  useCreateQuickAction,
   useAutomationRules,
   useCreateAutomationRule,
   useSetAutomationRuleEnabled,
@@ -13,6 +14,9 @@ import {
   useCreateNotificationChannel,
   useRemoveNotificationChannel,
   useTestNotificationChannel,
+  useContainers,
+  useProxmoxGuests,
+  useBackups,
 } from "../api/hooks";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
@@ -230,6 +234,129 @@ function NotificationChannelsPanel() {
   );
 }
 
+const QUICK_ACTION_KINDS = [
+  { key: "container.restart", label: "Restart container" },
+  { key: "container.start", label: "Start container" },
+  { key: "container.stop", label: "Stop container" },
+  { key: "guest.reboot", label: "Reboot VM/LXC" },
+  { key: "guest.start", label: "Start VM/LXC" },
+  { key: "homeassistant.restart", label: "Restart Home Assistant" },
+  { key: "backup.run", label: "Run backup" },
+];
+
+function QuickActionsAdminPanel() {
+  const { data } = useQuickActionsList();
+  const removeQuickAction = useRemoveQuickAction();
+  const createQuickAction = useCreateQuickAction();
+  const { data: containersData } = useContainers();
+  const { data: guestsData } = useProxmoxGuests();
+  const { data: backupsData } = useBackups();
+
+  const [showForm, setShowForm] = useState(false);
+  const [label, setLabel] = useState("");
+  const [actionKey, setActionKey] = useState(QUICK_ACTION_KINDS[0].key);
+  const [target, setTarget] = useState("");
+  const { push } = useToast();
+
+  const quickActions = data?.quickActions ?? [];
+  const containers = containersData?.containers ?? [];
+  const guests = guestsData?.guests ?? [];
+  const backups = backupsData?.backups ?? [];
+  const needsTarget = actionKey !== "homeassistant.restart";
+
+  async function handleCreate() {
+    if (!label || (needsTarget && !target)) return;
+    try {
+      await createQuickAction.mutateAsync({ label, actionKey, target: needsTarget ? target : "home-assistant" });
+      push("success", "Quick action pinned");
+      setShowForm(false);
+      setLabel("");
+      setTarget("");
+    } catch (err) {
+      push("error", err instanceof Error ? err.message : "Could not pin quick action");
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="page__header" style={{ marginBottom: 12 }}>
+        <div className="section-title">Quick actions</div>
+        <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? "Cancel" : "+ Pin quick action"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <input
+            placeholder="Label (e.g. Restart Frigate)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+          />
+          <select
+            value={actionKey}
+            onChange={(e) => {
+              setActionKey(e.target.value);
+              setTarget("");
+            }}
+            style={selectStyle}
+          >
+            {QUICK_ACTION_KINDS.map((k) => (
+              <option key={k.key} value={k.key}>{k.label}</option>
+            ))}
+          </select>
+
+          {needsTarget && actionKey.startsWith("container.") && (
+            <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
+              <option value="">Select container…</option>
+              {containers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+          {needsTarget && actionKey.startsWith("guest.") && (
+            <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
+              <option value="">Select VM/LXC…</option>
+              {guests.map((g) => (
+                <option key={`${g.type}:${g.vmid}`} value={`${g.type}:${g.vmid}`}>{g.name} ({g.type} {g.vmid})</option>
+              ))}
+            </select>
+          )}
+          {needsTarget && actionKey === "backup.run" && (
+            <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
+              <option value="">Select backup…</option>
+              {backups.map((b) => (
+                <option key={b.id} value={b.id}>{b.label}</option>
+              ))}
+            </select>
+          )}
+
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+        </div>
+      )}
+
+      {quickActions.length === 0 ? (
+        <EmptyState title="No quick actions pinned" description="Pin an action above to see it on the Cockpit." />
+      ) : (
+        <div className="row-list">
+          {quickActions.map((qa) => (
+            <div className="row" key={qa.id}>
+              <span className="row__primary">
+                {qa.label}
+                <div className="row__secondary mono">{qa.action_key} → {qa.target}</div>
+              </span>
+              <button className="btn btn--sm btn--ghost" onClick={() => removeQuickAction.mutate(qa.id)}>
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const inputStyle: CSSProperties = {
   background: "var(--color-background)",
   border: "1px solid var(--color-border)",
@@ -245,8 +372,6 @@ export function Administration() {
   const isAdmin = user?.role === "admin";
   const { data: integrations } = useIntegrationsConfig(isAdmin);
   const { data: users } = useUsersList(isAdmin);
-  const { data: quickActions } = useQuickActionsList();
-  const removeQuickAction = useRemoveQuickAction();
 
   return (
     <div className="page">
@@ -298,26 +423,7 @@ export function Administration() {
         </>
       )}
 
-      <div className="card">
-        <div className="section-title" style={{ marginBottom: 12 }}>Quick actions</div>
-        {!quickActions?.quickActions.length ? (
-          <EmptyState title="No quick actions pinned" description="Pin actions from a resource drawer to see them here." />
-        ) : (
-          <div className="row-list">
-            {quickActions.quickActions.map((qa) => (
-              <div className="row" key={qa.id}>
-                <span className="row__primary">
-                  {qa.label}
-                  <div className="row__secondary mono">{qa.action_key} → {qa.target}</div>
-                </span>
-                <button className="btn btn--sm btn--ghost" onClick={() => removeQuickAction.mutate(qa.id)}>
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <QuickActionsAdminPanel />
     </div>
   );
 }

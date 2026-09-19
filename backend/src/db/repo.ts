@@ -317,9 +317,21 @@ export const userPreferencesRepo = {
   },
 };
 
+export interface QuickActionRow {
+  id: string;
+  label: string;
+  action_key: string;
+  target: string;
+  sort_order: number;
+  created_by: string | null;
+}
+
 export const quickActionsRepo = {
-  list() {
-    return db.prepare("SELECT * FROM quick_actions ORDER BY sort_order").all();
+  list(): QuickActionRow[] {
+    return db.prepare("SELECT * FROM quick_actions ORDER BY sort_order").all() as QuickActionRow[];
+  },
+  findById(id: string): QuickActionRow | undefined {
+    return db.prepare("SELECT * FROM quick_actions WHERE id = ?").get(id) as QuickActionRow | undefined;
   },
   add(label: string, actionKey: string, target: string, createdBy: string) {
     const id = randomUUID();

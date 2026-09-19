@@ -5,10 +5,7 @@
 
 import { automationRulesRepo, type AutomationRuleRow } from "../db/repo.js";
 import { getSnapshot } from "./monitoring.js";
-import { runAction, ACTIONS } from "./actions.js";
-import { performContainerAction, type ContainerAction } from "../integrations/docker.js";
-import { performGuestAction, type GuestAction } from "../integrations/proxmox.js";
-import { callService } from "../integrations/homeassistant.js";
+import { runAction, ACTIONS, dispatchAction } from "./actions.js";
 
 const CRITICAL_STATUSES = new Set(["offline"]);
 const DEGRADED_STATUSES = new Set(["offline", "degraded", "warning"]);
@@ -18,20 +15,6 @@ const DEGRADED_STATUSES = new Set(["offline", "degraded", "warning"]);
 // rule needs one more sustained period before firing again, which is an
 // acceptable reset for a home lab.
 const downSince = new Map<string, number>();
-
-async function dispatch(actionKey: string, target: string): Promise<void> {
-  if (actionKey.startsWith("container.")) {
-    await performContainerAction(target, actionKey.slice("container.".length) as ContainerAction);
-  } else if (actionKey.startsWith("guest.")) {
-    const [type, vmidStr] = target.split(":");
-    if (type !== "qemu" && type !== "lxc") throw new Error("invalid_guest_target");
-    await performGuestAction(type, Number(vmidStr), actionKey.slice("guest.".length) as GuestAction);
-  } else if (actionKey === "homeassistant.restart") {
-    await callService("homeassistant", "restart");
-  } else {
-    throw new Error(`unsupported_automation_action:${actionKey}`);
-  }
-}
 
 async function evaluateRule(rule: AutomationRuleRow): Promise<void> {
   const snapshot = getSnapshot();
@@ -65,7 +48,7 @@ async function evaluateRule(rule: AutomationRuleRow): Promise<void> {
       rule.action_key,
       rule.action_target,
       { automationRuleId: rule.id },
-      () => dispatch(rule.action_key, rule.action_target)
+      () => dispatchAction(rule.action_key, rule.action_target)
     );
   } catch {
     // runAction already records the failure in audit_log/events; nothing

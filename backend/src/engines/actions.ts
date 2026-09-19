@@ -3,6 +3,9 @@
 // logging and event recording (sections 21, 28, 29).
 
 import { auditRepo, eventsRepo, type Role } from "../db/repo.js";
+import { performContainerAction, type ContainerAction } from "../integrations/docker.js";
+import { performGuestAction, type GuestAction } from "../integrations/proxmox.js";
+import { callService } from "../integrations/homeassistant.js";
 
 export type ConfirmLevel = 1 | 2 | 3;
 
@@ -41,6 +44,24 @@ export function canPerform(role: Role, actionKey: string): boolean {
   const def = ACTIONS[actionKey];
   if (!def) return false;
   return ROLE_RANK[role] >= ROLE_RANK[def.minRole];
+}
+
+// Executes one of the "simple" self-contained actions (no extra params
+// beyond the target) by key. Shared by the automation engine and Quick
+// Actions - both only ever fire a pre-existing action against a fixed
+// target, never something needing e.g. a snapshot name.
+export async function dispatchAction(actionKey: string, target: string): Promise<void> {
+  if (actionKey.startsWith("container.")) {
+    await performContainerAction(target, actionKey.slice("container.".length) as ContainerAction);
+  } else if (actionKey.startsWith("guest.")) {
+    const [type, vmidStr] = target.split(":");
+    if (type !== "qemu" && type !== "lxc") throw new Error("invalid_guest_target");
+    await performGuestAction(type, Number(vmidStr), actionKey.slice("guest.".length) as GuestAction);
+  } else if (actionKey === "homeassistant.restart") {
+    await callService("homeassistant", "restart");
+  } else {
+    throw new Error(`unsupported_action_for_dispatch:${actionKey}`);
+  }
 }
 
 export interface RunActionContext {

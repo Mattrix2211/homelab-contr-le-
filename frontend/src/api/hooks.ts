@@ -446,6 +446,20 @@ export function useRemoveQuickAction() {
   });
 }
 
+export function useCreateQuickAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { label: string; actionKey: string; target: string }) => api.post("/quick-actions", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quick-actions"] }),
+  });
+}
+
+export function useRunQuickAction() {
+  return useMutation({
+    mutationFn: (id: string) => api.post(`/quick-actions/${id}/run`),
+  });
+}
+
 export function usePrometheusAvailable() {
   return useQuery({
     queryKey: ["metrics", "available"],
