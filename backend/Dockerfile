@@ -18,6 +18,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN mkdir -p /data && addgroup -S homelab && adduser -S homelab -G homelab \
     && chown -R homelab:homelab /data /app \
+    && sed -i 's/\r$//' /docker-entrypoint.sh \
     && chmod +x /docker-entrypoint.sh
 
 # Stays root here deliberately - docker-entrypoint.sh aligns the "homelab"

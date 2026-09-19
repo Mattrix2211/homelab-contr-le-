@@ -44,6 +44,9 @@ runMigrations();
 seedAdmin();
 
 const app = express();
+// Behind the frontend nginx (one hop): trust its X-Forwarded-For so rate
+// limiting keys on the real client IP instead of the proxy container.
+app.set("trust proxy", 1);
 app.disable("x-powered-by");
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
 app.use(express.json({ limit: "1mb" }));

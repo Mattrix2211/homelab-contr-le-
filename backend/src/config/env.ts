@@ -17,6 +17,9 @@ export const env = {
 
   jwtSecret: process.env.JWT_SECRET ?? "dev-insecure-secret-change-me",
   sessionTtlHours: num(process.env.SESSION_TTL_HOURS, 12),
+  // Session cookie "Secure" flag. Browsers drop Secure cookies over plain HTTP,
+  // so leave false for http://<lan-ip> and set true behind HTTPS.
+  cookieSecure: bool(process.env.COOKIE_SECURE, false),
 
   adminEmail: process.env.ADMIN_EMAIL ?? "admin@homelab.local",
   adminPassword: process.env.ADMIN_PASSWORD ?? "changeme",

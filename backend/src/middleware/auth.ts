@@ -18,7 +18,7 @@ export function issueSessionCookie(res: Response, sessionId: string, ttlHours: n
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: env.nodeEnv === "production",
+    secure: env.cookieSecure,
     maxAge: ttlHours * 3600_000,
     path: "/",
   });
