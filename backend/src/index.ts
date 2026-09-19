@@ -34,6 +34,7 @@ import { automationRouter } from "./routes/automation.js";
 import { startAutomationLoop } from "./engines/automation.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { preferencesRouter } from "./routes/preferences.js";
+import { uptimeKumaRouter } from "./routes/uptimeKuma.js";
 import { dispatchAlert } from "./integrations/notifications.js";
 import { setAlertListener } from "./engines/monitoring.js";
 
@@ -76,6 +77,7 @@ app.use("/api/updates", requireAuth, updatesRouter);
 app.use("/api/automation-rules", requireAuth, automationRouter);
 app.use("/api/notification-channels", requireAuth, notificationsRouter);
 app.use("/api/preferences", requireAuth, preferencesRouter);
+app.use("/api/uptime-kuma", requireAuth, uptimeKumaRouter);
 
 app.use("/api", notFoundHandler);
 app.use(errorHandler);

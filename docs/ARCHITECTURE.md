@@ -144,6 +144,16 @@ integration doesn't come up cleanly against your version:
 - **Frigate** (`integrations/frigate.ts`) — uses Frigate's stable
   `/api/config`, `/api/stats`, `/api/events` endpoints; a camera is
   considered online if it has a current entry in `/api/stats`.
+- **Uptime Kuma** (`integrations/uptimeKuma.ts`, section 37) — Uptime Kuma's
+  community edition has no conventional REST API for reading monitor
+  status (the live dashboard uses a websocket session). The one stable,
+  documented, key-authenticated read path is its built-in Prometheus
+  exposition endpoint (`/metrics`, enabled under Settings > API Keys ->
+  "Show Prometheus Metrics"), scraped with HTTP Basic auth
+  (`:<api-key>`) and parsed for `monitor_status`/`monitor_response_time`
+  gauges. Shown as a standalone panel on the Monitoring page rather than
+  merged into the host/service registry, since Uptime Kuma monitors are
+  arbitrary named checks with no fixed mapping to `config/registry.ts`.
 
 ### Open-ended Phase 3 items: the interpretation used
 

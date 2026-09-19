@@ -50,9 +50,14 @@ export const env = {
     baseUrl: process.env.TRUENAS_URL ?? "",
     apiKey: process.env.TRUENAS_API_KEY ?? "",
   },
+  // Reads Uptime Kuma's built-in Prometheus /metrics endpoint (Settings >
+  // API Keys, then enable "Show Prometheus metrics"), not the websocket
+  // dashboard API - the metrics endpoint is the only stable, documented,
+  // key-authenticated read path Uptime Kuma exposes.
   uptimeKuma: {
     enabled: bool(process.env.UPTIME_KUMA_ENABLED, false),
     baseUrl: process.env.UPTIME_KUMA_URL ?? "",
+    apiKey: process.env.UPTIME_KUMA_API_KEY ?? "",
   },
   adguard: {
     enabled: bool(process.env.ADGUARD_ENABLED, false),

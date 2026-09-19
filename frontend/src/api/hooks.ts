@@ -24,6 +24,7 @@ import type {
   TriggerKind,
   NotificationChannel,
   NotificationKind,
+  UptimeKumaMonitor,
 } from "./types";
 
 export function useHosts() {
@@ -396,6 +397,16 @@ export function useNotificationsLastSeen() {
   return useQuery({
     queryKey: ["preferences", "notifications-last-seen"],
     queryFn: () => api.get<{ lastSeenAt: string | null }>("/preferences/notifications-last-seen"),
+  });
+}
+
+// --- Uptime Kuma (section 37) -----------------------------------------------
+
+export function useUptimeKumaMonitors() {
+  return useQuery({
+    queryKey: ["uptime-kuma", "monitors"],
+    queryFn: () => api.get<{ available: boolean; monitors: UptimeKumaMonitor[] }>("/uptime-kuma/monitors"),
+    refetchInterval: 30_000,
   });
 }
 

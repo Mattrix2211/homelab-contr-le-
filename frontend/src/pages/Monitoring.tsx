@@ -1,8 +1,42 @@
 import { useState } from "react";
-import { useHosts, useMetricRange, usePrometheusAvailable } from "../api/hooks";
+import { useHosts, useMetricRange, usePrometheusAvailable, useUptimeKumaMonitors } from "../api/hooks";
 import { MetricChart } from "../components/MetricChart";
 import { OpenLinkButton } from "../components/OpenLinkButton";
 import { EmptyState } from "../components/EmptyState";
+import { StatusBadge } from "../components/StatusBadge";
+
+function UptimeKumaPanel() {
+  const { data } = useUptimeKumaMonitors();
+  if (data?.available === false) {
+    return (
+      <EmptyState
+        title="Uptime Kuma not configured"
+        description="Set UPTIME_KUMA_ENABLED=true, UPTIME_KUMA_URL and UPTIME_KUMA_API_KEY to pull monitor availability here."
+      />
+    );
+  }
+  const monitors = data?.monitors ?? [];
+  if (monitors.length === 0) return null;
+  return (
+    <div className="card">
+      <div className="page__header" style={{ marginBottom: 12 }}>
+        <div className="section-title">Uptime Kuma</div>
+        <OpenLinkButton linkKey="uptimeKuma" label="Open Uptime Kuma" />
+      </div>
+      <div className="row-list">
+        {monitors.map((m) => (
+          <div className="row" key={m.name}>
+            <span className="row__primary">{m.name}</span>
+            <span className="mono text-tertiary" style={{ width: 90 }}>
+              {m.responseTimeMs !== null ? `${Math.round(m.responseTimeMs)} ms` : "—"}
+            </span>
+            <StatusBadge status={m.up ? "online" : "offline"} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const PERIODS: { label: string; minutes: number; step: number }[] = [
   { label: "1H", minutes: 60, step: 15 },
@@ -82,6 +116,8 @@ export function Monitoring() {
           </div>
         </>
       )}
+
+      <UptimeKumaPanel />
     </div>
   );
 }

@@ -74,7 +74,7 @@ Everything flows through:
   hardcoding it in a route.
 - **`integrations/*.ts`** — one adapter per external system (docker,
   proxmox, prometheus, homeassistant, truenas, adguard, npm, wireguard,
-  frigate, zigbee2mqtt, dockerRegistry, notifications). Each exposes an
+  frigate, zigbee2mqtt, uptimeKuma, dockerRegistry, notifications). Each exposes an
   `*Available()` check and a `*LastError()` getter, and **never throws**
   out of a monitoring call — failures return `null`/`[]` so one dead
   integration doesn't take down the cockpit. Follow this pattern for any

@@ -235,6 +235,14 @@ export interface AutomationRule {
 
 export type NotificationKind = "discord" | "homeassistant";
 
+// --- Uptime Kuma (section 37) -----------------------------------------------
+
+export interface UptimeKumaMonitor {
+  name: string;
+  up: boolean;
+  responseTimeMs: number | null;
+}
+
 export interface NotificationChannel {
   id: string;
   kind: NotificationKind;
