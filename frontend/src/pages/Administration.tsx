@@ -23,13 +23,19 @@ import { EmptyState } from "../components/EmptyState";
 import { useToast } from "../store/toast";
 import type { TriggerKind, NotificationKind } from "../api/types";
 
-const REMEDIATION_ACTIONS = [
-  { key: "container.restart", label: "Restart container" },
-  { key: "container.start", label: "Start container" },
-  { key: "guest.reboot", label: "Reboot VM/LXC" },
-  { key: "guest.start", label: "Start VM/LXC" },
-  { key: "homeassistant.restart", label: "Restart Home Assistant" },
-];
+// Single source of truth for action labels shown across both panels below,
+// so a renamed action can't drift out of sync between the two forms.
+const ACTION_LABELS: Record<string, string> = {
+  "container.restart": "Restart container",
+  "container.start": "Start container",
+  "container.stop": "Stop container",
+  "guest.reboot": "Reboot VM/LXC",
+  "guest.start": "Start VM/LXC",
+  "homeassistant.restart": "Restart Home Assistant",
+  "backup.run": "Run backup",
+};
+
+const REMEDIATION_ACTION_KEYS = ["container.restart", "container.start", "guest.reboot", "guest.start", "homeassistant.restart"];
 
 function AutomationRulesPanel() {
   const { data } = useAutomationRules();
@@ -41,7 +47,7 @@ function AutomationRulesPanel() {
   const [triggerKind, setTriggerKind] = useState<TriggerKind>("service_down");
   const [triggerTarget, setTriggerTarget] = useState("");
   const [triggerMinutes, setTriggerMinutes] = useState(5);
-  const [actionKey, setActionKey] = useState(REMEDIATION_ACTIONS[0].key);
+  const [actionKey, setActionKey] = useState(REMEDIATION_ACTION_KEYS[0]);
   const [actionTarget, setActionTarget] = useState("");
   const [cooldownMinutes, setCooldownMinutes] = useState(30);
   const { push } = useToast();
@@ -100,8 +106,8 @@ function AutomationRulesPanel() {
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <select value={actionKey} onChange={(e) => setActionKey(e.target.value)} style={selectStyle}>
-              {REMEDIATION_ACTIONS.map((a) => (
-                <option key={a.key} value={a.key}>{a.label}</option>
+              {REMEDIATION_ACTION_KEYS.map((key) => (
+                <option key={key} value={key}>{ACTION_LABELS[key]}</option>
               ))}
             </select>
             <input
@@ -234,15 +240,7 @@ function NotificationChannelsPanel() {
   );
 }
 
-const QUICK_ACTION_KINDS = [
-  { key: "container.restart", label: "Restart container" },
-  { key: "container.start", label: "Start container" },
-  { key: "container.stop", label: "Stop container" },
-  { key: "guest.reboot", label: "Reboot VM/LXC" },
-  { key: "guest.start", label: "Start VM/LXC" },
-  { key: "homeassistant.restart", label: "Restart Home Assistant" },
-  { key: "backup.run", label: "Run backup" },
-];
+const QUICK_ACTION_KEYS = ["container.restart", "container.start", "container.stop", "guest.reboot", "guest.start", "homeassistant.restart", "backup.run"];
 
 function QuickActionsAdminPanel() {
   const { data } = useQuickActionsList();
@@ -254,7 +252,7 @@ function QuickActionsAdminPanel() {
 
   const [showForm, setShowForm] = useState(false);
   const [label, setLabel] = useState("");
-  const [actionKey, setActionKey] = useState(QUICK_ACTION_KINDS[0].key);
+  const [actionKey, setActionKey] = useState(QUICK_ACTION_KEYS[0]);
   const [target, setTarget] = useState("");
   const { push } = useToast();
 
@@ -302,8 +300,8 @@ function QuickActionsAdminPanel() {
             }}
             style={selectStyle}
           >
-            {QUICK_ACTION_KINDS.map((k) => (
-              <option key={k.key} value={k.key}>{k.label}</option>
+            {QUICK_ACTION_KEYS.map((key) => (
+              <option key={key} value={key}>{ACTION_LABELS[key]}</option>
             ))}
           </select>
 
@@ -420,10 +418,9 @@ export function Administration() {
 
           <AutomationRulesPanel />
           <NotificationChannelsPanel />
+          <QuickActionsAdminPanel />
         </>
       )}
-
-      <QuickActionsAdminPanel />
     </div>
   );
 }

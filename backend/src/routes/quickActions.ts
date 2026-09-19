@@ -1,13 +1,22 @@
 import { Router } from "express";
 import { z } from "zod";
 import { backupsRepo, quickActionsRepo } from "../db/repo.js";
-import { dispatchAction, runAction } from "../engines/actions.js";
+import { ACTIONS, dispatchAction, runAction } from "../engines/actions.js";
 import { executeBackup } from "../engines/backups.js";
+import { requireRole } from "../middleware/auth.js";
 
 export const quickActionsRouter = Router();
 
+// Quick actions are global, cockpit-wide pinned shortcuts (visible to every
+// signed-in user on the Cockpit) - curating the list is an admin action even
+// though *running* one only requires the action's own minRole (checked by
+// runAction below), same as automation rules and notification channels.
 quickActionsRouter.get("/", (_req, res) => {
-  res.json({ quickActions: quickActionsRepo.list() });
+  const quickActions = quickActionsRepo.list().map((qa) => ({
+    ...qa,
+    level: ACTIONS[qa.action_key]?.level ?? 2,
+  }));
+  res.json({ quickActions });
 });
 
 const createSchema = z.object({
@@ -16,17 +25,17 @@ const createSchema = z.object({
   target: z.string().min(1),
 });
 
-quickActionsRouter.post("/", (req, res) => {
+quickActionsRouter.post("/", requireRole("admin"), (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "unauthenticated" });
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
+  if (!ACTIONS[parsed.data.actionKey]) return res.status(400).json({ error: "unknown_action" });
   const { label, actionKey, target } = parsed.data;
   const id = quickActionsRepo.add(label, actionKey, target, req.auth.user.id);
   res.status(201).json({ id });
 });
 
-quickActionsRouter.delete("/:id", (req, res) => {
-  if (!req.auth) return res.status(401).json({ error: "unauthenticated" });
+quickActionsRouter.delete("/:id", requireRole("admin"), (req, res) => {
   quickActionsRepo.remove(req.params.id);
   res.json({ ok: true });
 });

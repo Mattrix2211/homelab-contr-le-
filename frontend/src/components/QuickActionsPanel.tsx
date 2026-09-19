@@ -24,7 +24,7 @@ export function QuickActionsPanel() {
           <ActionButton
             key={qa.id}
             label={qa.label}
-            level={2}
+            level={qa.level}
             confirmBody={`Run "${qa.label}" (${qa.action_key} on ${qa.target}).`}
             onRun={() => runQuickAction.mutateAsync(qa.id)}
           />

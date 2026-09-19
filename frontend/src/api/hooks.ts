@@ -431,10 +431,18 @@ export function useUsersList(enabled: boolean) {
   });
 }
 
+export interface QuickAction {
+  id: string;
+  label: string;
+  action_key: string;
+  target: string;
+  level: 1 | 2 | 3;
+}
+
 export function useQuickActionsList() {
   return useQuery({
     queryKey: ["quick-actions"],
-    queryFn: () => api.get<{ quickActions: { id: string; label: string; action_key: string; target: string }[] }>("/quick-actions"),
+    queryFn: () => api.get<{ quickActions: QuickAction[] }>("/quick-actions"),
   });
 }
 
