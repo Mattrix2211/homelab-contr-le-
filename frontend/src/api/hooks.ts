@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { api } from "./client";
 import type {
+  Role,
   HostStatus,
   ServiceStatus,
   ContainerInfo,
@@ -431,6 +432,31 @@ export function useUsersList(enabled: boolean) {
   });
 }
 
+export function useCreateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; password: string; role: Role; displayName: string }) =>
+      api.post("/config/users", input),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["config", "users"] }),
+  });
+}
+
+export function useSetUserRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: Role }) => api.patch(`/config/users/${id}/role`, { role }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["config", "users"] }),
+  });
+}
+
+export function useRemoveUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/config/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["config", "users"] }),
+  });
+}
+
 export interface QuickAction {
   id: string;
   label: string;
@@ -528,20 +554,53 @@ export function useLinks() {
 export function useLiveSnapshot() {
   const qc = useQueryClient();
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${protocol}://${window.location.host}/ws`);
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "snapshot") {
-          qc.setQueryData(["hosts"], { hosts: msg.data.hosts, generatedAt: msg.data.generatedAt });
-          qc.setQueryData(["services"], { services: msg.data.services, generatedAt: msg.data.generatedAt });
-          qc.setQueryData(["containers"], { containers: msg.data.containers, generatedAt: msg.data.generatedAt });
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+    let attempt = 0;
+
+    function connect() {
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
+      ws = socket;
+
+      socket.onopen = () => {
+        attempt = 0;
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === "snapshot") {
+            qc.setQueryData(["hosts"], { hosts: msg.data.hosts, generatedAt: msg.data.generatedAt });
+            qc.setQueryData(["services"], { services: msg.data.services, generatedAt: msg.data.generatedAt });
+            qc.setQueryData(["containers"], { containers: msg.data.containers, generatedAt: msg.data.generatedAt });
+          }
+        } catch {
+          // ignore malformed frames
         }
-      } catch {
-        // ignore malformed frames
-      }
+      };
+
+      // Reconnect with capped exponential backoff (1s, 2s, 4s, ... up to
+      // 30s) rather than giving up silently - the 15s REST refetchInterval
+      // fallback covers freshness in the meantime, so there's no rush.
+      socket.onclose = () => {
+        if (cancelled) return;
+        const delay = Math.min(30_000, 1000 * 2 ** attempt);
+        attempt += 1;
+        reconnectTimer = setTimeout(connect, delay);
+      };
+      socket.onerror = () => {
+        socket.close();
+      };
+    }
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      ws?.close();
     };
-    return () => ws.close();
   }, [qc]);
 }

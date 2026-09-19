@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useHosts, useServices, useContainers, useAlerts, useEvents, useCockpitLayout, useSetCockpitLayout } from "../api/hooks";
 import { HostCard } from "../components/HostCard";
 import { ServiceCard } from "../components/ServiceCard";
@@ -42,13 +42,26 @@ function useOrderedSections() {
 }
 
 function CustomizePanel({ onClose }: { onClose: () => void }) {
+  const { isLoading } = useCockpitLayout();
   const sections = useOrderedSections();
-  const [draft, setDraft] = useState(sections);
+  const [draft, setDraft] = useState<typeof sections | null>(null);
   const setLayout = useSetCockpitLayout();
+  const initialized = useRef(false);
 
-  useEffect(() => setDraft(sections), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // Only seed `draft` from the persisted layout once, the first time it's
+  // actually resolved - opening this panel before useCockpitLayout() has
+  // loaded must not seed it from the (temporary) all-visible/default-order
+  // fallback and then let a quick "Save" click overwrite the user's real
+  // saved layout with that default.
+  useEffect(() => {
+    if (!isLoading && !initialized.current) {
+      setDraft(sections);
+      initialized.current = true;
+    }
+  }, [isLoading, sections]);
 
   function move(index: number, dir: -1 | 1) {
+    if (!draft) return;
     const next = [...draft];
     const target = index + dir;
     if (target < 0 || target >= next.length) return;
@@ -57,14 +70,26 @@ function CustomizePanel({ onClose }: { onClose: () => void }) {
   }
 
   function toggle(index: number) {
+    if (!draft) return;
     const next = [...draft];
     next[index] = { ...next[index], visible: !next[index].visible };
     setDraft(next);
   }
 
   async function save() {
+    if (!draft) return;
     await setLayout.mutateAsync(draft.map((s) => ({ id: s.id, visible: s.visible })));
     onClose();
+  }
+
+  if (!draft) {
+    return (
+      <div className="card">
+        <div className="section-title" style={{ marginBottom: 12 }}>Customize cockpit layout</div>
+        <EmptyState title="Loading your saved layout…" />
+        <button className="btn btn--sm btn--ghost" onClick={onClose}>Cancel</button>
+      </div>
+    );
   }
 
   return (

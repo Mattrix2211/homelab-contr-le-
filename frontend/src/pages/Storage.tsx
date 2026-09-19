@@ -23,6 +23,7 @@ import { EmptyState } from "../components/EmptyState";
 import { SkeletonGrid } from "../components/Skeleton";
 import { formatBytes, formatRelativeTime } from "../lib/format";
 import { useToast } from "../store/toast";
+import { useAuth } from "../store/auth";
 import type { BackupKind } from "../api/types";
 
 function SnapshotsPanel() {
@@ -89,6 +90,9 @@ function SnapshotsPanel() {
 
 function BackupsPanel() {
   const { data } = useBackups();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const canRun = user?.role === "operator" || user?.role === "admin";
   const runBackup = useRunBackup();
   const removeBackup = useRemoveBackup();
   const createBackup = useCreateBackup();
@@ -96,27 +100,41 @@ function BackupsPanel() {
   const [label, setLabel] = useState("");
   const [kind, setKind] = useState<BackupKind>("custom");
   const [targetRef, setTargetRef] = useState("");
+  const [triggerUrl, setTriggerUrl] = useState("");
+  const { push } = useToast();
 
   const backups = data?.backups ?? [];
 
   async function handleCreate() {
     if (!label) return;
-    await createBackup.mutateAsync({ label, kind, targetRef: targetRef || undefined });
-    setLabel("");
-    setTargetRef("");
-    setShowForm(false);
+    try {
+      await createBackup.mutateAsync({
+        label,
+        kind,
+        targetRef: kind !== "custom" ? targetRef || undefined : undefined,
+        triggerUrl: kind === "custom" ? triggerUrl || undefined : undefined,
+      });
+      setLabel("");
+      setTargetRef("");
+      setTriggerUrl("");
+      setShowForm(false);
+    } catch (err) {
+      push("error", err instanceof Error ? err.message : "Could not create backup");
+    }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
         <div className="section-title">Backups (3-2-1)</div>
-        <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "+ Add backup"}
-        </button>
+        {isAdmin && (
+          <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
+            {showForm ? "Cancel" : "+ Add backup"}
+          </button>
+        )}
       </div>
 
-      {showForm && (
+      {isAdmin && showForm && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <input
             placeholder="Label (e.g. Home Assistant)"
@@ -133,18 +151,27 @@ function BackupsPanel() {
             <option value="truenas-snapshot">TrueNAS snapshot</option>
             <option value="custom">Custom (webhook)</option>
           </select>
-          <input
-            placeholder={kind === "custom" ? "trigger URL" : "target reference"}
-            value={targetRef}
-            onChange={(e) => setTargetRef(e.target.value)}
-            style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
-          />
+          {kind === "custom" ? (
+            <input
+              placeholder="https://trigger-url…"
+              value={triggerUrl}
+              onChange={(e) => setTriggerUrl(e.target.value)}
+              style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
+            />
+          ) : (
+            <input
+              placeholder="target reference"
+              value={targetRef}
+              onChange={(e) => setTargetRef(e.target.value)}
+              style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
+            />
+          )}
           <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
         </div>
       )}
 
       {backups.length === 0 ? (
-        <EmptyState title="No backups tracked yet" description="Add Home Assistant, TrueNAS or a custom backup runner above." />
+        <EmptyState title="No backups tracked yet" description="An admin can add Home Assistant, TrueNAS or a custom backup runner above." />
       ) : (
         <div className="row-list">
           {backups.map((b) => (
@@ -160,8 +187,10 @@ function BackupsPanel() {
                 label={b.last_status ? b.last_status.toUpperCase() : "PENDING"}
               />
               <div style={{ display: "flex", gap: 6 }}>
-                <ActionButton label="Run" level={1} onRun={() => runBackup.mutateAsync(b.id)} />
-                <button className="btn btn--sm btn--ghost" onClick={() => removeBackup.mutate(b.id)}>Remove</button>
+                {canRun && <ActionButton label="Run" level={1} onRun={() => runBackup.mutateAsync(b.id)} />}
+                {isAdmin && (
+                  <button className="btn btn--sm btn--ghost" onClick={() => removeBackup.mutate(b.id)}>Remove</button>
+                )}
               </div>
             </div>
           ))}

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useHosts, useServices } from "../api/hooks";
+import { useHosts, useServices, useProxmoxGuests } from "../api/hooks";
 import { HostCard } from "../components/HostCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { ResourceDrawer, DrawerMetricRow } from "../components/ResourceDrawer";
+import { GuestRow } from "../components/GuestRow";
+import { EmptyState } from "../components/EmptyState";
 import { SkeletonGrid } from "../components/Skeleton";
 import { formatPercent, formatUptime } from "../lib/format";
 import type { HostStatus } from "../api/types";
@@ -20,13 +22,18 @@ function TopologyNode({ label, status, sub }: { label: string; status?: HostStat
 export function Infrastructure() {
   const { data: hostsData, isLoading } = useHosts();
   const { data: servicesData } = useServices();
+  const { data: guestsData } = useProxmoxGuests();
   const [openHostId, setOpenHostId] = useState<string | null>(null);
   const [view, setView] = useState<"topology" | "machines">("topology");
 
   const hosts = hostsData?.hosts ?? [];
   const services = servicesData?.services ?? [];
+  const guests = guestsData?.guests ?? [];
   const openHost = hosts.find((h) => h.id === openHostId);
   const openHostServices = services.filter((s) => s.hostId === openHostId);
+  // The registry only models one Proxmox node (M83) for now, so every
+  // guest returned by the API belongs to it.
+  const openHostGuests = openHostId === "m83" ? guests : [];
 
   const m83 = hosts.find((h) => h.id === "m83");
   const rpi = hosts.find((h) => h.id === "rpi");
@@ -115,6 +122,20 @@ export function Infrastructure() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+          {openHostId === "m83" && (
+            <div className="drawer__section">
+              <div className="section-title" style={{ marginBottom: 8 }}>Virtual machines & LXC</div>
+              {openHostGuests.length === 0 ? (
+                <EmptyState title="No VM/LXC data" description="Configure PROXMOX_ENABLED and credentials to manage guests here." />
+              ) : (
+                <div className="row-list">
+                  {openHostGuests.map((g) => (
+                    <GuestRow key={`${g.type}:${g.vmid}`} guest={g} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </ResourceDrawer>

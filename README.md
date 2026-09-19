@@ -41,7 +41,11 @@ The backend mounts `/var/run/docker.sock` read-write so it can list,
 start/stop/restart and read logs from containers on the same host as the
 `LXC 100` Docker services (Portainer, AdGuard, Frigate, Prometheus, …). The
 socket is **only** mounted into the backend container — the browser never
-talks to it directly (section 28 of the spec).
+talks to it directly (section 28 of the spec). The backend container starts
+as root just long enough for `docker-entrypoint.sh` to align its
+unprivileged `homelab` user with the host's `docker.sock` group (that GID
+varies per host and can't be baked into the image), then drops to that user
+via `su-exec` before running any application code.
 
 ## Local development (without Docker)
 

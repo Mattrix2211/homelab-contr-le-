@@ -3,6 +3,9 @@ import { useAuth } from "../store/auth";
 import {
   useIntegrationsConfig,
   useUsersList,
+  useCreateUser,
+  useSetUserRole,
+  useRemoveUser,
   useQuickActionsList,
   useRemoveQuickAction,
   useCreateQuickAction,
@@ -18,6 +21,7 @@ import {
   useProxmoxGuests,
   useBackups,
 } from "../api/hooks";
+import type { Role } from "../api/types";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { useToast } from "../store/toast";
@@ -355,6 +359,123 @@ function QuickActionsAdminPanel() {
   );
 }
 
+function UsersPanel() {
+  const { user: currentUser } = useAuth();
+  const { data } = useUsersList(true);
+  const createUser = useCreateUser();
+  const setRole = useSetUserRole();
+  const removeUser = useRemoveUser();
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [role, setRoleField] = useState<Role>("viewer");
+  const { push } = useToast();
+
+  const users = data?.users ?? [];
+
+  async function handleCreate() {
+    if (!email || !password || !displayName) return;
+    try {
+      await createUser.mutateAsync({ email, password, role, displayName });
+      push("success", `${displayName} created`);
+      setEmail("");
+      setPassword("");
+      setDisplayName("");
+      setRoleField("viewer");
+      setShowForm(false);
+    } catch (err) {
+      push("error", err instanceof Error ? err.message : "Could not create user");
+    }
+  }
+
+  async function handleRoleChange(id: string, newRole: Role) {
+    try {
+      await setRole.mutateAsync({ id, role: newRole });
+    } catch (err) {
+      push("error", err instanceof Error ? err.message : "Could not change role");
+    }
+  }
+
+  async function handleRemove(id: string) {
+    try {
+      await removeUser.mutateAsync(id);
+    } catch (err) {
+      push("error", err instanceof Error ? err.message : "Could not remove user");
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="page__header" style={{ marginBottom: 12 }}>
+        <div className="section-title">Users</div>
+        <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
+          {showForm ? "Cancel" : "+ Add user"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <input
+            placeholder="Display name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 140 }}
+          />
+          <input
+            placeholder="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+          />
+          <input
+            placeholder="Password (min. 8 chars)"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 160 }}
+          />
+          <select value={role} onChange={(e) => setRoleField(e.target.value as Role)} style={selectStyle}>
+            <option value="viewer">Viewer</option>
+            <option value="operator">Operator</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+        </div>
+      )}
+
+      <div className="row-list">
+        {users.map((u) => (
+          <div className="row" key={u.id}>
+            <span className="row__primary">
+              {u.displayName}
+              <div className="row__secondary">{u.email}</div>
+            </span>
+            <select
+              value={u.role}
+              onChange={(e) => handleRoleChange(u.id, e.target.value as Role)}
+              disabled={u.id === currentUser?.id}
+              style={{ ...selectStyle, fontSize: 12 }}
+            >
+              <option value="viewer">Viewer</option>
+              <option value="operator">Operator</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button
+              className="btn btn--sm btn--ghost"
+              onClick={() => handleRemove(u.id)}
+              disabled={u.id === currentUser?.id}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const inputStyle: CSSProperties = {
   background: "var(--color-background)",
   border: "1px solid var(--color-border)",
@@ -369,7 +490,6 @@ export function Administration() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const { data: integrations } = useIntegrationsConfig(isAdmin);
-  const { data: users } = useUsersList(isAdmin);
 
   return (
     <div className="page">
@@ -401,20 +521,7 @@ export function Administration() {
             </p>
           </div>
 
-          <div className="card">
-            <div className="section-title" style={{ marginBottom: 12 }}>Users</div>
-            <div className="row-list">
-              {users?.users.map((u) => (
-                <div className="row" key={u.id}>
-                  <span className="row__primary">
-                    {u.displayName}
-                    <div className="row__secondary">{u.email}</div>
-                  </span>
-                  <span className="mono text-secondary" style={{ textTransform: "uppercase", fontSize: 11 }}>{u.role}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <UsersPanel />
 
           <AutomationRulesPanel />
           <NotificationChannelsPanel />

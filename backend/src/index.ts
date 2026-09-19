@@ -98,3 +98,19 @@ server.listen(env.port, () => {
 process.on("SIGTERM", () => {
   server.close(() => process.exit(0));
 });
+
+// Defense in depth: an unhandled rejection anywhere (a missed .catch on
+// fire-and-forget work, for instance) terminates the process by default on
+// modern Node - log and keep serving everyone else instead of one bad
+// promise taking down the whole cockpit. An uncaught synchronous exception
+// leaves state genuinely undefined, so that one still exits (the
+// docker-compose restart policy brings it back up cleanly).
+process.on("unhandledRejection", (reason) => {
+  // eslint-disable-next-line no-console
+  console.error("[process] unhandled rejection", reason);
+});
+process.on("uncaughtException", (err) => {
+  // eslint-disable-next-line no-console
+  console.error("[process] uncaught exception", err);
+  process.exit(1);
+});

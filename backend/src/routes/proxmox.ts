@@ -39,6 +39,7 @@ proxmoxRouter.post("/guests/:vmid/actions", async (req, res) => {
   if (!req.auth) return res.status(401).json({ error: "unauthenticated" });
 
   const vmid = Number(req.params.vmid);
+  if (!Number.isFinite(vmid)) return res.status(400).json({ error: "invalid_input" });
   const { type, action } = parsed.data;
 
   try {

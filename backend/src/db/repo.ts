@@ -30,6 +30,38 @@ export const usersRepo = {
   list(): UserRow[] {
     return db.prepare("SELECT * FROM users ORDER BY created_at").all() as UserRow[];
   },
+  create(email: string, passwordHash: string, role: Role, displayName: string): string {
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO users (id, email, password_hash, role, display_name) VALUES (?, ?, ?, ?, ?)`
+    ).run(id, email, passwordHash, role, displayName);
+    return id;
+  },
+  setRole(id: string, role: Role) {
+    db.prepare("UPDATE users SET role = ? WHERE id = ?").run(role, id);
+  },
+  // Deleting a user with foreign_keys=ON (db/client.ts) would otherwise
+  // fail outright the moment they have a live session, and would silently
+  // orphan the FK constraint check on any audit_log/quick_actions/backups/
+  // automation_rules row they created. Sessions are ephemeral and go with
+  // them; historical records keep user_display_name (a point-in-time
+  // snapshot already stored alongside audit_log.user_id) so nulling the FK
+  // there preserves the audit trail instead of erasing it.
+  remove(id: string) {
+    const tx = db.transaction(() => {
+      db.prepare("DELETE FROM sessions WHERE user_id = ?").run(id);
+      db.prepare("UPDATE audit_log SET user_id = NULL WHERE user_id = ?").run(id);
+      db.prepare("UPDATE quick_actions SET created_by = NULL WHERE created_by = ?").run(id);
+      db.prepare("UPDATE backups SET created_by = NULL WHERE created_by = ?").run(id);
+      db.prepare("UPDATE automation_rules SET created_by = NULL WHERE created_by = ?").run(id);
+      db.prepare("DELETE FROM users WHERE id = ?").run(id);
+    });
+    tx();
+  },
+  countAdmins(): number {
+    const row = db.prepare("SELECT COUNT(*) as n FROM users WHERE role = 'admin'").get() as { n: number };
+    return row.n;
+  },
 };
 
 export interface SessionRow {

@@ -15,7 +15,23 @@ export function createSnapshotBroadcaster(server: HttpServer) {
   const wss = new WebSocketServer({ server, path: "/ws" });
   const clients = new Set<WebSocket>();
 
+  // A ws 'error' event with no listener is rethrown as an uncaught
+  // exception by Node's EventEmitter, which crashes the whole process - a
+  // single flaky client connection (network drop, sleeping laptop, a proxy
+  // sending ECONNRESET) must never be able to take down every connected
+  // user. Both the server-level and per-client listeners below exist only
+  // to swallow that event; cleanup still happens via 'close'.
+  wss.on("error", (err) => {
+    // eslint-disable-next-line no-console
+    console.error("[ws] server error", err);
+  });
+
   wss.on("connection", (ws, req) => {
+    ws.on("error", (err) => {
+      // eslint-disable-next-line no-console
+      console.error("[ws] client error", err);
+    });
+
     const token = parseCookie(req.headers.cookie, "hcc_session");
     let authenticated = false;
     if (token) {
@@ -41,7 +57,13 @@ export function createSnapshotBroadcaster(server: HttpServer) {
     broadcast(snapshot: Snapshot) {
       const payload = JSON.stringify({ type: "snapshot", data: snapshot });
       for (const client of clients) {
-        if (client.readyState === client.OPEN) client.send(payload);
+        if (client.readyState !== client.OPEN) continue;
+        client.send(payload, (err) => {
+          if (err) {
+            // eslint-disable-next-line no-console
+            console.error("[ws] send failed", err);
+          }
+        });
       }
     },
   };
