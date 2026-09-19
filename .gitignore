@@ -11,3 +11,6 @@ backend/data/
 
 .DS_Store
 tsconfig.tsbuildinfo
+
+# Local Claude Code agent worktree scaffolding - never project content.
+.claude/
