@@ -22,6 +22,13 @@ function findContainer(containers: ContainerInfo[], names: string[] | undefined)
   return containers.find((c) => names.some((n) => c.name.toLowerCase().includes(n.toLowerCase())));
 }
 
+// For a host, its own management API (Proxmox node API, TrueNAS API, Home
+// Assistant API) IS the liveness check - there is no separate ping. So
+// "configured but the call failed" means the host itself is down
+// (status: offline, drives the System Map rollup and host_down automation
+// rules), while "not configured at all" is the genuinely unknown case.
+// This is deliberately different from a service/app-level integration
+// (e.g. AdGuard unreachable doesn't mean its container is down).
 async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Promise<HostStatus> {
   if (host.kind === "proxmox") {
     if (!proxmoxAvailable()) {
@@ -43,7 +50,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
         role: host.role,
         ip: host.ip,
         kind: host.kind,
-        status: "unknown",
+        status: "offline",
         unavailableReason: proxmoxLastError() ?? "Proxmox API unreachable",
       };
     }
@@ -73,15 +80,28 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
       };
     }
     const pools = await listPools();
-    const healthy = pools.length > 0 && pools.every((p) => p.healthy);
+    if (pools.length === 0) {
+      // Either the API call failed (real error set) or it succeeded with a
+      // genuinely empty pool list; only the former means the host is down.
+      const error = truenasLastError();
+      return {
+        id: host.id,
+        name: host.name,
+        role: host.role,
+        ip: host.ip,
+        kind: host.kind,
+        status: error ? "offline" : "unknown",
+        unavailableReason: error ?? "No pools reported",
+      };
+    }
+    const healthy = pools.every((p) => p.healthy);
     return {
       id: host.id,
       name: host.name,
       role: host.role,
       ip: host.ip,
       kind: host.kind,
-      status: pools.length === 0 ? "unknown" : healthy ? "online" : "degraded",
-      unavailableReason: pools.length === 0 ? (truenasLastError() ?? "No pool data") : undefined,
+      status: healthy ? "online" : "degraded",
     };
   }
 
@@ -94,7 +114,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
       role: host.role,
       ip: host.ip,
       kind: host.kind,
-      status: ha ? "online" : "unknown",
+      status: ha ? "online" : "offline",
       unavailableReason: ha ? undefined : (homeAssistantLastError() ?? "Home Assistant unreachable"),
     };
   }
@@ -122,7 +142,11 @@ function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): Servi
 
   if (svc.hostId === DOCKER_HOST_ID && svc.containerNames) {
     if (!dockerAvailable()) {
-      return { ...base, status: "unknown", unavailableReason: dockerLastError() ?? "Docker integration not configured" };
+      return { ...base, status: "unknown", unavailableReason: "Docker integration not configured" };
+    }
+    const fetchError = dockerLastError();
+    if (fetchError) {
+      return { ...base, status: "unknown", unavailableReason: fetchError };
     }
     const container = findContainer(containers, svc.containerNames);
     if (!container) {
@@ -226,15 +250,16 @@ function reconcileAlerts(hosts: HostStatus[], services: ServiceStatus[]) {
 }
 
 export async function refreshSnapshot(): Promise<Snapshot> {
-  let containers: ContainerInfo[];
-  try {
-    containers = await listContainers();
-    if (containers.length > 0 || dockerAvailable()) {
-      lastGoodContainers = containers;
-      lastGoodContainersAt = Date.now();
-    }
-  } catch {
-    containers = lastGoodContainers;
+  // listContainers() never throws - a failed fetch is signaled via
+  // dockerLastError(), not an exception - so a failed tick is detected
+  // that way rather than with try/catch, and holds the last-known-good
+  // list instead of flipping every Docker-hosted service to "not found".
+  const fetched = await listContainers();
+  const fetchFailed = dockerAvailable() && !!dockerLastError();
+  const containers = fetchFailed ? lastGoodContainers : fetched;
+  if (!fetchFailed) {
+    lastGoodContainers = fetched;
+    lastGoodContainersAt = Date.now();
   }
 
   const hosts = await Promise.all(HOSTS.map((h) => buildHostStatus(h, containers)));

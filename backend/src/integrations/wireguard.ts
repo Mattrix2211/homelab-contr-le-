@@ -23,6 +23,9 @@ async function login(): Promise<void> {
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`wireguard login http ${res.status}`);
+  // "" (no Set-Cookie header) is a valid outcome, distinct from null
+  // ("no session established yet") - using ?? "" here would make listPeers'
+  // `if (!sessionCookie)` check re-login on every single call.
   sessionCookie = res.headers.get("set-cookie")?.split(";")[0] ?? "";
 }
 
@@ -39,7 +42,7 @@ export interface WireguardPeer {
 export async function listPeers(): Promise<WireguardPeer[]> {
   if (!wireguardAvailable()) return [];
   try {
-    if (!sessionCookie) await login();
+    if (sessionCookie === null) await login();
     let res = await fetch(new URL("/api/wireguard/client", env.wireguard.baseUrl), {
       headers: sessionCookie ? { Cookie: sessionCookie } : {},
       signal: AbortSignal.timeout(5000),

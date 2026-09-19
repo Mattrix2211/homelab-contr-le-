@@ -93,13 +93,18 @@ export async function listContainers(): Promise<ContainerInfo[]> {
 export async function getContainerLogs(id: string, tail = 200): Promise<string> {
   if (!docker) throw new Error("docker_unavailable");
   const container = docker.getContainer(id);
-  const buffer = (await container.logs({
-    stdout: true,
-    stderr: true,
-    tail,
-    timestamps: true,
-  })) as unknown as Buffer;
-  // Docker multiplexes stdout/stderr with an 8-byte header per frame; strip it.
+  const [info, buffer] = await Promise.all([
+    container.inspect(),
+    container.logs({ stdout: true, stderr: true, tail, timestamps: true }) as unknown as Promise<Buffer>,
+  ]);
+
+  // Docker only multiplexes stdout/stderr with an 8-byte frame header per
+  // chunk when the container was created without a TTY; a Tty:true
+  // container's log stream is raw text and demuxing it corrupts the output.
+  if (info.Config.Tty) {
+    return buffer.toString("utf-8");
+  }
+
   let out = "";
   let offset = 0;
   while (offset + 8 <= buffer.length) {
@@ -145,7 +150,14 @@ export async function getLocalImageDigest(imageRef: string, repo: string): Promi
     const image = docker.getImage(imageRef);
     const info = await image.inspect();
     const repoDigests: string[] = info.RepoDigests ?? [];
-    const match = repoDigests.find((d) => d.startsWith(`${repo}@`) || d.includes(`/${repo.split("/").pop()}@`));
+    // A locally pulled official (unnamespaced) image's RepoDigest is just
+    // "<name>@sha256:...", with no "library/" prefix - only a namespaced
+    // repo (or one with an explicit registry host, e.g. "docker.io/library/
+    // nginx@...") appears in the fuller forms below.
+    const baseName = repo.split("/").pop();
+    const match = repoDigests.find(
+      (d) => d.startsWith(`${repo}@`) || d.startsWith(`${baseName}@`) || d.includes(`/${baseName}@`)
+    );
     return match ? match.split("@")[1] : null;
   } catch {
     return null;
