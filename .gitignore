@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+*.log
+
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+.DS_Store
+tsconfig.tsbuildinfo
