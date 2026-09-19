@@ -1,0 +1,115 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    image: homelab-control-center-backend:local
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_PATH: /data/homelab.db
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-12}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@homelab.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+
+      DOCKER_ENABLED: ${DOCKER_ENABLED:-true}
+      DOCKER_SOCKET_PATH: /var/run/docker.sock
+
+      PROMETHEUS_ENABLED: ${PROMETHEUS_ENABLED:-false}
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-}
+
+      PROXMOX_ENABLED: ${PROXMOX_ENABLED:-false}
+      PROXMOX_URL: ${PROXMOX_URL:-}
+      PROXMOX_TOKEN_ID: ${PROXMOX_TOKEN_ID:-}
+      PROXMOX_TOKEN_SECRET: ${PROXMOX_TOKEN_SECRET:-}
+      PROXMOX_NODE: ${PROXMOX_NODE:-m83}
+      PROXMOX_INSECURE_TLS: ${PROXMOX_INSECURE_TLS:-true}
+
+      HOMEASSISTANT_ENABLED: ${HOMEASSISTANT_ENABLED:-false}
+      HOMEASSISTANT_URL: ${HOMEASSISTANT_URL:-}
+      HOMEASSISTANT_TOKEN: ${HOMEASSISTANT_TOKEN:-}
+
+      TRUENAS_ENABLED: ${TRUENAS_ENABLED:-false}
+      TRUENAS_URL: ${TRUENAS_URL:-}
+      TRUENAS_API_KEY: ${TRUENAS_API_KEY:-}
+
+      UPTIME_KUMA_ENABLED: ${UPTIME_KUMA_ENABLED:-false}
+      UPTIME_KUMA_URL: ${UPTIME_KUMA_URL:-}
+      UPTIME_KUMA_API_KEY: ${UPTIME_KUMA_API_KEY:-}
+
+      ADGUARD_ENABLED: ${ADGUARD_ENABLED:-false}
+      ADGUARD_URL: ${ADGUARD_URL:-}
+      ADGUARD_USERNAME: ${ADGUARD_USERNAME:-}
+      ADGUARD_PASSWORD: ${ADGUARD_PASSWORD:-}
+
+      NPM_ENABLED: ${NPM_ENABLED:-false}
+      NPM_URL: ${NPM_URL:-}
+      NPM_IDENTITY: ${NPM_IDENTITY:-}
+      NPM_SECRET: ${NPM_SECRET:-}
+
+      WIREGUARD_ENABLED: ${WIREGUARD_ENABLED:-false}
+      WIREGUARD_URL: ${WIREGUARD_URL:-}
+      WIREGUARD_PASSWORD: ${WIREGUARD_PASSWORD:-}
+
+      FRIGATE_ENABLED: ${FRIGATE_ENABLED:-false}
+      FRIGATE_URL: ${FRIGATE_URL:-}
+
+      ZIGBEE2MQTT_ENABLED: ${ZIGBEE2MQTT_ENABLED:-false}
+      ZIGBEE2MQTT_URL: ${ZIGBEE2MQTT_URL:-}
+
+      UPDATE_CHECK_ENABLED: ${UPDATE_CHECK_ENABLED:-true}
+      UPDATE_CHECK_INTERVAL_MINUTES: ${UPDATE_CHECK_INTERVAL_MINUTES:-60}
+
+      LINK_PROXMOX_URL: ${LINK_PROXMOX_URL:-}
+      LINK_TRUENAS_URL: ${LINK_TRUENAS_URL:-}
+      LINK_GRAFANA_URL: ${LINK_GRAFANA_URL:-}
+      LINK_ADGUARD_URL: ${LINK_ADGUARD_URL:-}
+      LINK_NPM_URL: ${LINK_NPM_URL:-}
+      LINK_PORTAINER_URL: ${LINK_PORTAINER_URL:-}
+      LINK_HOMEASSISTANT_URL: ${LINK_HOMEASSISTANT_URL:-}
+      LINK_FRIGATE_URL: ${LINK_FRIGATE_URL:-}
+      LINK_UPTIME_KUMA_URL: ${LINK_UPTIME_KUMA_URL:-}
+    volumes:
+      - hcc-data:/data
+      # Read-write is required for container start/stop/restart actions
+      # (section 9). The socket is mounted only into this backend
+      # container, never into the frontend or exposed to the browser
+      # (section 28).
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - hcc-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+    image: homelab-control-center-frontend:local
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - hcc-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
+
+networks:
+  hcc-net:
+    driver: bridge
+
+volumes:
+  hcc-data:
+    driver: local

@@ -1,0 +1,48 @@
+/* MK Design System v2.0 - HomeLab declination (dark-first, section 32-33) */
+:root {
+  --color-background: #0b1929;
+  --color-surface: #0f2942;
+  --color-border: #1a3a52;
+  --color-hover: #1e4060;
+
+  --color-signal: #00b4d8;
+  --color-wake: #48cae4;
+  --color-green-tech: #16b84e;
+  --color-amber: #f4a261;
+  --color-red: #e63946;
+  --color-mist: #8fafc7;
+  --color-fog: #6b8ba4;
+
+  --color-text-primary: #eaf2f8;
+  --color-text-secondary: var(--color-mist);
+  --color-text-tertiary: var(--color-fog);
+
+  --status-online: var(--color-green-tech);
+  --status-degraded: var(--color-amber);
+  --status-warning: var(--color-amber);
+  --status-offline: var(--color-red);
+  --status-unknown: var(--color-fog);
+
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+
+  --sidebar-width: 248px;
+  --topbar-height: 60px;
+}
