@@ -92,6 +92,25 @@ export const env = {
     intervalMinutes: num(process.env.UPDATE_CHECK_INTERVAL_MINUTES, 60),
   },
 
+  // Statistical anomaly detection on CPU/RAM (per-host node_exporter
+  // metrics via Prometheus): baseline mean/stddev over a lookback window,
+  // flag when the current value is `zThreshold` standard deviations away.
+  // Depends on Prometheus being enabled; independently toggleable so it can
+  // be turned off even when Prometheus is used only for the Monitoring
+  // page's manual charts.
+  anomaly: {
+    enabled: bool(process.env.ANOMALY_DETECTION_ENABLED, true),
+    intervalMinutes: num(process.env.ANOMALY_CHECK_INTERVAL_MINUTES, 30),
+    lookbackDays: num(process.env.ANOMALY_LOOKBACK_DAYS, 14),
+    zThreshold: num(process.env.ANOMALY_Z_THRESHOLD, 3),
+    // Below this many hourly samples, the baseline is too thin to trust -
+    // skip rather than flag on a nearly-empty history.
+    minSamples: num(process.env.ANOMALY_MIN_SAMPLES, 48),
+    // Below this stddev (percentage points), a metric is essentially flat -
+    // skip rather than flag on noise from a near-zero denominator.
+    minStdDev: num(process.env.ANOMALY_MIN_STDDEV, 3),
+  },
+
   // Non-secret "open native UI" links (section 45). Safe to expose to the
   // frontend as-is - these are addresses, never credentials.
   links: {

@@ -35,6 +35,8 @@ import { startAutomationLoop } from "./engines/automation.js";
 import { notificationsRouter } from "./routes/notifications.js";
 import { preferencesRouter } from "./routes/preferences.js";
 import { uptimeKumaRouter } from "./routes/uptimeKuma.js";
+import { anomaliesRouter } from "./routes/anomalies.js";
+import { startAnomalyLoop } from "./engines/anomaly.js";
 import { dispatchAlert } from "./integrations/notifications.js";
 import { setAlertListener } from "./engines/monitoring.js";
 
@@ -78,6 +80,7 @@ app.use("/api/automation-rules", requireAuth, automationRouter);
 app.use("/api/notification-channels", requireAuth, notificationsRouter);
 app.use("/api/preferences", requireAuth, preferencesRouter);
 app.use("/api/uptime-kuma", requireAuth, uptimeKumaRouter);
+app.use("/api/anomalies", requireAuth, anomaliesRouter);
 
 app.use("/api", notFoundHandler);
 app.use(errorHandler);
@@ -89,6 +92,7 @@ setAlertListener(dispatchAlert);
 startMonitoringLoop(10_000, (snapshot) => broadcaster.broadcast(snapshot));
 startUpdatesLoop();
 startAutomationLoop();
+startAnomalyLoop();
 
 server.listen(env.port, () => {
   // eslint-disable-next-line no-console

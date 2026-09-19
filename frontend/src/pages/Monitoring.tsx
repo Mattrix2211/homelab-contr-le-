@@ -1,9 +1,42 @@
 import { useState } from "react";
-import { useHosts, useMetricRange, usePrometheusAvailable, useUptimeKumaMonitors } from "../api/hooks";
+import { useAnomalies, useHosts, useMetricRange, usePrometheusAvailable, useUptimeKumaMonitors } from "../api/hooks";
 import { MetricChart } from "../components/MetricChart";
 import { OpenLinkButton } from "../components/OpenLinkButton";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatRelativeTime } from "../lib/format";
+
+function AnomaliesPanel() {
+  const { data } = useAnomalies();
+  const anomalies = data?.anomalies ?? [];
+  if (anomalies.length === 0) return null;
+  return (
+    <div className="card">
+      <div className="page__header" style={{ marginBottom: 12 }}>
+        <div className="section-title">Anomalies detected</div>
+        <span className="text-tertiary" style={{ fontSize: 12.5 }}>
+          vs. {data?.checkedAt ? "14-day baseline" : "—"}
+        </span>
+      </div>
+      <div className="row-list">
+        {anomalies.map((a) => (
+          <div className="row" key={`${a.hostId}:${a.metric}`}>
+            <span className="row__primary">
+              {a.hostName} · {a.metricLabel}
+            </span>
+            <span className="mono text-tertiary" style={{ width: 150 }}>
+              {a.current}% vs {a.baselineMean}% avg (z={a.zScore})
+            </span>
+            <span className="mono text-tertiary" style={{ width: 90 }}>
+              {formatRelativeTime(a.detectedAt)}
+            </span>
+            <StatusBadge status="warning" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function UptimeKumaPanel() {
   const { data } = useUptimeKumaMonitors();
@@ -117,6 +150,7 @@ export function Monitoring() {
         </>
       )}
 
+      <AnomaliesPanel />
       <UptimeKumaPanel />
     </div>
   );

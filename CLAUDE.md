@@ -108,6 +108,13 @@ Everything flows through:
 - **`engines/updates.ts`** — background Docker Hub digest check on its own
   interval (`UPDATE_CHECK_INTERVAL_MINUTES`, not the 10s loop, since it's
   network-heavy); cached and read by `routes/updates.ts`.
+- **`engines/anomaly.ts`** — statistical anomaly detection (section 44):
+  baselines per-host CPU/RAM as a mean/stddev over `ANOMALY_LOOKBACK_DAYS`
+  via Prometheus `queryRange`, flags the current value past
+  `ANOMALY_Z_THRESHOLD` standard deviations, raises through the same
+  `raiseAlert()` dedupe path as `monitoring.ts`. Own interval
+  (`ANOMALY_CHECK_INTERVAL_MINUTES`) since the baseline query is heavy;
+  requires Prometheus. See `docs/ARCHITECTURE.md`'s Phase 3 notes.
 - **`db/`** — `client.ts` opens the SQLite file (WAL mode) and runs
   `migrations/*.sql` in order on boot (tracked in `_migrations`); add a new
   numbered `.sql` file for schema changes, never edit an applied one.

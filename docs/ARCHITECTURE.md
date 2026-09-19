@@ -162,12 +162,28 @@ Two Phase 3 bullets in section 44 ("détection d'anomalies",
 intentionally not specified further in the brief. Rather than build
 something speculative, each got a concrete, bounded reading:
 
-- **"Détection d'anomalies"** → the existing threshold-based alerts
+- **"Détection d'anomalies"** → two layers now. The threshold-based alerts
   (offline/degraded status, RAM/CPU thresholds already in the Cockpit) plus
-  the automation engine's remediation rules **are** the anomaly response
-  here. No separate statistical/ML anomaly detector was built — nothing in
-  the spec described what "anomalous" should mean beyond the thresholds
-  already covered by section 6's alert zone.
+  the automation engine's remediation rules handle "is it down". On top of
+  that, `engines/anomaly.ts` adds a genuinely statistical layer: per host,
+  it baselines CPU/RAM (node_exporter via Prometheus) as a mean + stddev
+  over a configurable lookback window (`ANOMALY_LOOKBACK_DAYS`, default 14
+  days, hourly samples via `queryRange`) and flags the current instant value
+  when it's `ANOMALY_Z_THRESHOLD` (default 3) standard deviations away —
+  independent of any fixed threshold, so it catches "up but behaving unlike
+  itself" (e.g. Frigate's host running 3x its usual CPU with no service
+  marked degraded). Guards against noise: skips when there's too little
+  history (`ANOMALY_MIN_SAMPLES`) or when the metric is nearly flat
+  (`ANOMALY_MIN_STDDEV`, avoids a near-zero stddev turning tiny wobbles into
+  constant alerts). No new table — per the DB rule above, the baseline is
+  recomputed each tick from Prometheus's own retention rather than
+  duplicating time-series data into SQLite; only the resulting alert (via
+  the same `raiseAlert`/dedupe path as every other alert) lands in `events`.
+  Runs on its own loop (`ANOMALY_CHECK_INTERVAL_MINUTES`, default 30,
+  independent of the 10s monitoring loop since the baseline query is the
+  heaviest single Prometheus call the app makes) and is surfaced in the
+  Monitoring page. Requires Prometheus; independently toggleable via
+  `ANOMALY_DETECTION_ENABLED`.
 - **"Automatisations"** → `engines/automation.ts` implements one concrete
   rule shape: *"if `<service|host>` stays down for N minutes, run
   `<existing level 1/2 action>`, then wait a cooldown before it can fire

@@ -26,6 +26,7 @@ import type {
   NotificationChannel,
   NotificationKind,
   UptimeKumaMonitor,
+  AnomalyInfo,
 } from "./types";
 
 export function useHosts() {
@@ -408,6 +409,16 @@ export function useUptimeKumaMonitors() {
     queryKey: ["uptime-kuma", "monitors"],
     queryFn: () => api.get<{ available: boolean; monitors: UptimeKumaMonitor[] }>("/uptime-kuma/monitors"),
     refetchInterval: 30_000,
+  });
+}
+
+// --- Anomaly detection (section 44) -----------------------------------------
+
+export function useAnomalies() {
+  return useQuery({
+    queryKey: ["anomalies"],
+    queryFn: () => api.get<{ anomalies: AnomalyInfo[]; checkedAt: string | null }>("/anomalies"),
+    refetchInterval: 60_000,
   });
 }
 

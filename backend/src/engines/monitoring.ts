@@ -185,7 +185,9 @@ export function setAlertListener(fn: AlertListener) {
   onNewAlert = fn;
 }
 
-function raiseAlert(source: string, severity: "warning" | "critical", message: string) {
+// Exported so other engines (e.g. anomaly detection) raise alerts through
+// the same dedupe/listener path instead of writing to `events` directly.
+export function raiseAlert(source: string, severity: "warning" | "critical", message: string) {
   if (!eventsRepo.hasActiveAlert(source, message)) {
     eventsRepo.resolveAlertsBySource(source); // clear any stale differently-worded alert for this source first
     eventsRepo.record({ category: "alert", severity, source, message });

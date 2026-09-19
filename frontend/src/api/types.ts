@@ -251,3 +251,17 @@ export interface NotificationChannel {
   enabled: number;
   created_at: string;
 }
+
+// --- Anomaly detection (section 44) -----------------------------------------
+
+export interface AnomalyInfo {
+  hostId: string;
+  hostName: string;
+  metric: "cpu" | "ram";
+  metricLabel: string;
+  current: number;
+  baselineMean: number;
+  baselineStdDev: number;
+  zScore: number;
+  detectedAt: string;
+}
