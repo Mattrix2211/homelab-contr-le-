@@ -1,7 +1,8 @@
-import { useHost, useHomeAssistantRestart } from "../api/hooks";
+import { useHost, useHomeAssistantRestart, useHomeAssistantEntitiesSummary, useZigbeeDeviceCount } from "../api/hooks";
 import { ServiceCard } from "../components/ServiceCard";
 import { OpenLinkButton } from "../components/OpenLinkButton";
 import { ActionButton } from "../components/ActionButton";
+import { MetricCard } from "../components/MetricCard";
 import { EmptyState } from "../components/EmptyState";
 
 const DOMOTIQUE_IDS = ["home-assistant", "mosquitto", "zigbee2mqtt", "matterbridge"];
@@ -9,7 +10,11 @@ const DOMOTIQUE_IDS = ["home-assistant", "mosquitto", "zigbee2mqtt", "matterbrid
 export function HomeAssistant() {
   const { data } = useHost("rpi");
   const restart = useHomeAssistantRestart();
+  const { data: entitiesData } = useHomeAssistantEntitiesSummary();
+  const { data: zigbeeData } = useZigbeeDeviceCount();
   const services = (data?.services ?? []).filter((s) => DOMOTIQUE_IDS.includes(s.id));
+
+  const summary = entitiesData?.summary;
 
   return (
     <div className="page">
@@ -24,7 +29,7 @@ export function HomeAssistant() {
             label="Restart Home Assistant"
             level={2}
             confirmBody="All automations and the dashboard will be briefly unavailable."
-            onRun={() => restart.mutateAsync().then(() => {})}
+            onRun={() => restart.mutateAsync()}
           />
         </div>
       </div>
@@ -39,15 +44,38 @@ export function HomeAssistant() {
         </div>
       )}
 
-      <div className="placeholder-panel">
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, marginBottom: 8 }}>
-          Entity health, Zigbee/Matter device counts — Phase 2
+      {entitiesData?.available === false ? (
+        <EmptyState title="Entity health not available" description="Configure HOMEASSISTANT_URL and HOMEASSISTANT_TOKEN to see entity/Zigbee counts." />
+      ) : summary ? (
+        <div className="card">
+          <div className="section-title" style={{ marginBottom: 12 }}>Entity health</div>
+          <div className="grid grid--metrics">
+            <MetricCard label="Total entities" value={summary.totalEntities.toLocaleString()} />
+            <MetricCard
+              label="Unavailable"
+              value={summary.unavailableCount.toLocaleString()}
+              tone={summary.unavailableCount > 0 ? "warn" : undefined}
+            />
+            <MetricCard
+              label="Zigbee devices"
+              value={zigbeeData?.available && zigbeeData.count !== null ? String(zigbeeData.count) : "—"}
+            />
+          </div>
+          {summary.unavailableEntities.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div className="section-title" style={{ marginBottom: 8 }}>Unavailable entities</div>
+              <div className="row-list">
+                {summary.unavailableEntities.map((e) => (
+                  <div className="row" key={e.entityId}>
+                    <span className="row__primary">{e.friendlyName}</span>
+                    <span className="mono text-tertiary">{e.entityId}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        <p className="text-secondary" style={{ maxWidth: 520, margin: "0 auto" }}>
-          The cockpit intentionally stays a technical health view (section 16) — it will never become a second
-          domotique dashboard. Unavailable entities and MQTT/Zigbee2MQTT device counts land here in Phase 2.
-        </p>
-      </div>
+      ) : null}
     </div>
   );
 }

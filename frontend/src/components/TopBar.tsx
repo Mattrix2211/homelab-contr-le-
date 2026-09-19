@@ -1,4 +1,5 @@
 import { useAlerts } from "../api/hooks";
+import { NotificationCenter } from "./NotificationCenter";
 
 export function TopBar({
   onOpenPalette,
@@ -28,6 +29,7 @@ export function TopBar({
             {alertCount} alert{alertCount > 1 ? "s" : ""}
           </span>
         )}
+        <NotificationCenter />
       </div>
     </header>
   );

@@ -4,7 +4,15 @@ import { StatusBadge } from "./StatusBadge";
 import { ActionButton } from "./ActionButton";
 import { useContainerAction } from "../api/hooks";
 
-export function ContainerRow({ container, onOpen }: { container: ContainerInfo; onOpen: () => void }) {
+export function ContainerRow({
+  container,
+  onOpen,
+  hasUpdate,
+}: {
+  container: ContainerInfo;
+  onOpen: () => void;
+  hasUpdate?: boolean;
+}) {
   const mutation = useContainerAction();
   const running = container.state === "running";
 
@@ -12,6 +20,12 @@ export function ContainerRow({ container, onOpen }: { container: ContainerInfo; 
     <div className="row">
       <div className="row__primary" onClick={onOpen} style={{ cursor: "pointer" }}>
         {container.name}
+        {hasUpdate && (
+          <span className="status-badge status-badge--warning" style={{ marginLeft: 8 }}>
+            <span className="status-badge__dot" />
+            Update
+          </span>
+        )}
         <div className="row__secondary mono">{container.image}</div>
       </div>
       <div style={{ width: 110 }}>

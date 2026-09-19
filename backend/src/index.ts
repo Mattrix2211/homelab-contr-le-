@@ -24,6 +24,18 @@ import { configRouter } from "./routes/config.js";
 import { searchRouter } from "./routes/search.js";
 import { linksRouter } from "./routes/links.js";
 import { homeAssistantRouter } from "./routes/homeassistant.js";
+import { truenasRouter } from "./routes/truenas.js";
+import { backupsRouter } from "./routes/backups.js";
+import { networkRouter } from "./routes/network.js";
+import { frigateRouter } from "./routes/frigate.js";
+import { updatesRouter } from "./routes/updates.js";
+import { startUpdatesLoop } from "./engines/updates.js";
+import { automationRouter } from "./routes/automation.js";
+import { startAutomationLoop } from "./engines/automation.js";
+import { notificationsRouter } from "./routes/notifications.js";
+import { preferencesRouter } from "./routes/preferences.js";
+import { dispatchAlert } from "./integrations/notifications.js";
+import { setAlertListener } from "./engines/monitoring.js";
 
 runMigrations();
 seedAdmin();
@@ -56,6 +68,14 @@ app.use("/api/config", requireAuth, configRouter);
 app.use("/api/search", requireAuth, searchRouter);
 app.use("/api/links", requireAuth, linksRouter);
 app.use("/api/home-assistant", requireAuth, homeAssistantRouter);
+app.use("/api/truenas", requireAuth, truenasRouter);
+app.use("/api/backups", requireAuth, backupsRouter);
+app.use("/api/network", requireAuth, networkRouter);
+app.use("/api/frigate", requireAuth, frigateRouter);
+app.use("/api/updates", requireAuth, updatesRouter);
+app.use("/api/automation-rules", requireAuth, automationRouter);
+app.use("/api/notification-channels", requireAuth, notificationsRouter);
+app.use("/api/preferences", requireAuth, preferencesRouter);
 
 app.use("/api", notFoundHandler);
 app.use(errorHandler);
@@ -63,7 +83,10 @@ app.use(errorHandler);
 const server = http.createServer(app);
 const broadcaster = createSnapshotBroadcaster(server);
 
+setAlertListener(dispatchAlert);
 startMonitoringLoop(10_000, (snapshot) => broadcaster.broadcast(snapshot));
+startUpdatesLoop();
+startAutomationLoop();
 
 server.listen(env.port, () => {
   // eslint-disable-next-line no-console

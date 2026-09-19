@@ -1,15 +1,66 @@
 import { useMemo, useState } from "react";
-import { useContainers, useContainerLogs } from "../api/hooks";
+import { useContainers, useContainerLogs, useFrigateStatus, useUpdates } from "../api/hooks";
 import { ContainerRow } from "../components/ContainerRow";
 import { ResourceDrawer } from "../components/ResourceDrawer";
 import { EmptyState } from "../components/EmptyState";
 import { Skeleton } from "../components/Skeleton";
-import { formatMb, formatPercent, formatUptime } from "../lib/format";
+import { StatusBadge } from "../components/StatusBadge";
+import { formatMb, formatPercent, formatRelativeTime, formatUptime } from "../lib/format";
 
-type Filter = "all" | "running" | "stopped" | "unhealthy";
+type Filter = "all" | "running" | "stopped" | "unhealthy" | "updates";
+
+function FrigatePanel() {
+  const { data } = useFrigateStatus();
+  if (!data?.available) {
+    return (
+      <div className="drawer__section">
+        <div className="section-title" style={{ marginBottom: 8 }}>Frigate</div>
+        <p className="text-tertiary" style={{ fontSize: 12.5 }}>
+          Set FRIGATE_ENABLED=true and FRIGATE_URL to see cameras and recent events here.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <>
+      <div className="drawer__section">
+        <div className="section-title" style={{ marginBottom: 8 }}>Cameras</div>
+        <div className="row-list">
+          {data.cameras.map((c) => (
+            <div className="row" key={c.name}>
+              <span className="row__primary">{c.name}</span>
+              <span className="mono text-tertiary" style={{ marginRight: 8 }}>
+                {c.detectionFps !== null ? `${c.detectionFps.toFixed(1)} fps` : "—"}
+              </span>
+              <StatusBadge status={c.online ? "online" : "offline"} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="drawer__section">
+        <div className="section-title" style={{ marginBottom: 8 }}>Recent events</div>
+        {data.events.length === 0 ? (
+          <p className="text-tertiary" style={{ fontSize: 12.5 }}>No recent detections.</p>
+        ) : (
+          <div className="row-list">
+            {data.events.map((e) => (
+              <div className="row" key={e.id}>
+                <span className="row__primary">
+                  {e.label} on {e.camera}
+                  <div className="row__secondary">{formatRelativeTime(e.startTime)}</div>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
 
 export function Services() {
   const { data, isLoading } = useContainers();
+  const { data: updatesData } = useUpdates();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -18,17 +69,24 @@ export function Services() {
   const open = containers.find((c) => c.id === openId);
   const { data: logsData } = useContainerLogs(openId ?? undefined);
 
+  const updatesById = useMemo(() => {
+    const map = new Map<string, boolean | null>();
+    for (const u of updatesData?.updates ?? []) map.set(u.containerId, u.updateAvailable);
+    return map;
+  }, [updatesData]);
+
   const filtered = useMemo(() => {
     return containers.filter((c) => {
       if (filter === "running" && c.state !== "running") return false;
       if (filter === "stopped" && c.state === "running") return false;
       if (filter === "unhealthy" && c.health !== "unhealthy") return false;
+      if (filter === "updates" && updatesById.get(c.id) !== true) return false;
       if (query && !c.name.toLowerCase().includes(query.toLowerCase()) && !c.image.toLowerCase().includes(query.toLowerCase())) {
         return false;
       }
       return true;
     });
-  }, [containers, filter, query]);
+  }, [containers, filter, query, updatesById]);
 
   return (
     <div className="page">
@@ -54,7 +112,7 @@ export function Services() {
             minWidth: 200,
           }}
         />
-        {(["all", "running", "stopped", "unhealthy"] as Filter[]).map((f) => (
+        {(["all", "running", "stopped", "unhealthy", "updates"] as Filter[]).map((f) => (
           <button key={f} className={`btn btn--sm ${filter === f ? "btn--primary" : "btn--ghost"}`} onClick={() => setFilter(f)}>
             {f[0].toUpperCase() + f.slice(1)}
           </button>
@@ -73,7 +131,7 @@ export function Services() {
         ) : (
           <div className="row-list">
             {filtered.map((c) => (
-              <ContainerRow key={c.id} container={c} onOpen={() => setOpenId(c.id)} />
+              <ContainerRow key={c.id} container={c} onOpen={() => setOpenId(c.id)} hasUpdate={updatesById.get(c.id) === true} />
             ))}
           </div>
         )}
@@ -119,6 +177,7 @@ export function Services() {
               {logsData?.logs || "No logs available."}
             </pre>
           </div>
+          {open.name.toLowerCase().includes("frigate") && <FrigatePanel />}
         </ResourceDrawer>
       )}
     </div>

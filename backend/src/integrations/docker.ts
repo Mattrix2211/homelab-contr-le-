@@ -134,3 +134,20 @@ export async function inspectContainer(id: string) {
   if (!docker) throw new Error("docker_unavailable");
   return docker.getContainer(id).inspect();
 }
+
+// Returns the sha256 digest (e.g. "sha256:abcd...") this locally pulled
+// image was fetched as, matched against `repo` (e.g. "library/nginx"), or
+// null if the image has no matching RepoDigest (built locally, digest-less
+// pull, etc.) - used by the update-check engine.
+export async function getLocalImageDigest(imageRef: string, repo: string): Promise<string | null> {
+  if (!docker) return null;
+  try {
+    const image = docker.getImage(imageRef);
+    const info = await image.inspect();
+    const repoDigests: string[] = info.RepoDigests ?? [];
+    const match = repoDigests.find((d) => d.startsWith(`${repo}@`) || d.includes(`/${repo.split("/").pop()}@`));
+    return match ? match.split("@")[1] : null;
+  } catch {
+    return null;
+  }
+}

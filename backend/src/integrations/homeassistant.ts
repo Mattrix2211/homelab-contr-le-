@@ -32,6 +32,37 @@ export async function getStatus(): Promise<HomeAssistantStatus | null> {
   }
 }
 
+export interface EntitiesSummary {
+  totalEntities: number;
+  unavailableCount: number;
+  unavailableEntities: { entityId: string; friendlyName: string }[];
+}
+
+export async function getEntitiesSummary(): Promise<EntitiesSummary | null> {
+  if (!homeAssistantAvailable()) return null;
+  try {
+    const res = await fetch(new URL("/api/states", env.homeassistant.baseUrl), {
+      headers: { Authorization: `Bearer ${env.homeassistant.token}` },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) throw new Error(`home assistant http ${res.status}`);
+    const states = (await res.json()) as any[];
+    lastError = null;
+    const unavailable = states.filter((s) => s.state === "unavailable" || s.state === "unknown");
+    return {
+      totalEntities: states.length,
+      unavailableCount: unavailable.length,
+      unavailableEntities: unavailable.slice(0, 25).map((s) => ({
+        entityId: s.entity_id,
+        friendlyName: s.attributes?.friendly_name ?? s.entity_id,
+      })),
+    };
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : String(err);
+    return null;
+  }
+}
+
 export async function callService(domain: string, service: string, data: Record<string, unknown> = {}) {
   if (!homeAssistantAvailable()) throw new Error("home_assistant_unavailable");
   const res = await fetch(new URL(`/api/services/${domain}/${service}`, env.homeassistant.baseUrl), {

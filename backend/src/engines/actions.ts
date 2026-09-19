@@ -28,6 +28,11 @@ export const ACTIONS: Record<string, ActionDefinition> = {
   "guest.shutdown": { key: "guest.shutdown", label: "Shutdown VM/LXC", level: 2, minRole: "operator" },
   "guest.reboot": { key: "guest.reboot", label: "Reboot VM/LXC", level: 2, minRole: "operator" },
   "homeassistant.restart": { key: "homeassistant.restart", label: "Restart Home Assistant", level: 2, minRole: "operator" },
+  "truenas.smart-test": { key: "truenas.smart-test", label: "Run SMART test", level: 1, minRole: "operator" },
+  "truenas.scrub": { key: "truenas.scrub", label: "Run scrub", level: 2, minRole: "operator" },
+  "truenas.snapshot-create": { key: "truenas.snapshot-create", label: "Create snapshot", level: 1, minRole: "operator" },
+  "backup.run": { key: "backup.run", label: "Run backup", level: 1, minRole: "operator" },
+  "adguard.protection-toggle": { key: "adguard.protection-toggle", label: "Toggle DNS protection", level: 2, minRole: "operator" },
 };
 
 const ROLE_RANK: Record<Role, number> = { viewer: 1, operator: 2, admin: 3 };
@@ -39,7 +44,9 @@ export function canPerform(role: Role, actionKey: string): boolean {
 }
 
 export interface RunActionContext {
-  userId: string;
+  // null identifies a system-triggered run (e.g. an automation rule)
+  // rather than a signed-in user.
+  userId: string | null;
   userDisplayName: string;
   userRole: Role;
 }

@@ -9,10 +9,12 @@ TrueNAS NAS, Raspberry Pi running Home Assistant, and a Docker LXC running
 Portainer/AdGuard/Frigate/Prometheus/Grafana/etc.). It aggregates state from
 these systems into one dark, keyboard-first UI — it does not replace
 Grafana/Proxmox/Portainer/TrueNAS/Home Assistant, it sits above them.
-Currently implements the Phase 1 (MVP) scope only; see `docs/SPEC.md` (full
-original spec, sections 1-47) and `docs/ARCHITECTURE.md` (which sections are
-implemented vs. deferred to Phase 2/3, and why key technical choices were
-made — read this before making architectural changes).
+Implements the full spec (Phase 1 + 2 + 3) — see `docs/SPEC.md` (full
+original spec, sections 1-47) and `docs/ARCHITECTURE.md` (technical
+decisions, the exact assumptions behind each Phase 2 integration's API
+shape, and the concrete interpretation chosen for open-ended Phase 3 items
+like "automatisations" and "détection d'anomalies" — read this before
+making architectural changes).
 
 ## Commands
 
@@ -71,15 +73,23 @@ Everything flows through:
   extend it here when adding a new host or service rather than
   hardcoding it in a route.
 - **`integrations/*.ts`** — one adapter per external system (docker,
-  proxmox, prometheus, homeassistant, truenas). Each exposes an
+  proxmox, prometheus, homeassistant, truenas, adguard, npm, wireguard,
+  frigate, zigbee2mqtt, dockerRegistry, notifications). Each exposes an
   `*Available()` check and a `*LastError()` getter, and **never throws**
   out of a monitoring call — failures return `null`/`[]` so one dead
   integration doesn't take down the cockpit. Follow this pattern for any
-  new integration.
+  new integration. Several of these (TrueNAS's exact REST paths, wg-easy,
+  Zigbee2MQTT's optional HTTP API) rest on a documented convention rather
+  than a live-tested instance — see `docs/ARCHITECTURE.md`'s "Phase 2/3
+  implementation notes" before assuming a call shape is wrong.
 - **`engines/monitoring.ts`** — polls all integrations on an interval
   (`startMonitoringLoop`, ~10s), builds a single in-memory `Snapshot`
-  (`getSnapshot()`), and reconciles alerts into the `events` table. REST
-  routes read from this cache rather than hitting integrations directly.
+  (`getSnapshot()`), and reconciles alerts into the `events` table,
+  including the System Map rollup (a downed host or dead Docker daemon
+  collapses its dependent services into one alert instead of many —
+  `setAlertListener()` is how the notification engine hears about new
+  alerts without monitoring.ts depending on it). REST routes read from this
+  cache rather than hitting integrations directly.
 - **`engines/actions.ts`** — the single choke point for every mutating
   action. `ACTIONS` maps an action key to `{ level, minRole }` (levels 1-3
   match `docs/SPEC.md` section 21: level 1 = immediate, level 2 = confirm,
@@ -87,13 +97,24 @@ Everything flows through:
   here** — those stay behind "Open native UI" links only). `runAction()`
   checks the role, runs the integration call, and always writes one
   `audit_log` row and one `events` row. Any new mutation must go through
-  this, not call an integration directly from a route.
+  this, not call an integration directly from a route. `RunActionContext.
+  userId` is nullable specifically so `engines/automation.ts` can attribute
+  a rule-triggered run without a signed-in user.
+- **`engines/automation.ts`** — evaluates enabled `automation_rules` every
+  30s against the monitoring snapshot (in-memory `downSince` map tracks how
+  long a condition has been true; resets on restart, which is an accepted
+  tradeoff for a home lab); fires through `runAction()` with a per-rule
+  cooldown. Only level 1/2 action keys are dispatchable.
+- **`engines/updates.ts`** — background Docker Hub digest check on its own
+  interval (`UPDATE_CHECK_INTERVAL_MINUTES`, not the 10s loop, since it's
+  network-heavy); cached and read by `routes/updates.ts`.
 - **`db/`** — `client.ts` opens the SQLite file (WAL mode) and runs
   `migrations/*.sql` in order on boot (tracked in `_migrations`); add a new
   numbered `.sql` file for schema changes, never edit an applied one.
   `repo.ts` holds all hand-written prepared-statement queries. Per
-  `docs/ARCHITECTURE.md`, this DB is for config/users/audit/events only —
-  time-series metrics stay in Prometheus, never get duplicated here.
+  `docs/ARCHITECTURE.md`, this DB is for config/users/audit/events/backups/
+  automation_rules/notification_channels/user_preferences only — time-series
+  metrics stay in Prometheus, never get duplicated here.
 - **`routes/*.ts`** — thin: parse/validate with `zod`, call an engine or
   integration, return JSON. Auth (`requireAuth`) and role checks
   (`requireRole`) are applied per-router in `index.ts`, not inside routes.
@@ -138,11 +159,15 @@ Tailwind/UI framework) built on MK Design System v2.0 tokens.
   `useLiveSnapshot()` once.
 - **`pages/`** — one file per sidebar page (Cockpit, Infrastructure,
   Services, Storage, Network, HomeAssistant, Monitoring, Events,
-  Administration). Pages for integrations not yet live in Phase 1
-  (Storage/Network/HomeAssistant/Monitoring detail) render a
-  `.placeholder-panel` explaining what's deferred plus an
-  `OpenLinkButton` to the native UI — follow that pattern rather than
-  faking data when adding a page for an unimplemented integration.
+  Administration). When an integration a section needs isn't configured,
+  the page shows an `EmptyState` naming the env vars to set rather than
+  faking data — follow that pattern (not a placeholder that pretends the
+  feature doesn't exist) for any new integration-backed section.
+- **`pages/Cockpit.tsx`** — sections are data-driven (`DEFAULT_SECTIONS` +
+  `sectionElements` record) specifically so per-user layout customization
+  (`useCockpitLayout`/`useSetCockpitLayout`, backed by
+  `user_preferences.cockpit_layout`) can reorder/hide them; add a new
+  cockpit section there, not as an unconditionally-rendered block.
 
 ### Cross-cutting conventions
 

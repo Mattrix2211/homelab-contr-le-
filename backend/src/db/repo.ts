@@ -150,6 +150,173 @@ export const eventsRepo = {
   },
 };
 
+export type BackupKind = "homeassistant" | "truenas-snapshot" | "custom";
+export type BackupStatus = "success" | "error" | "running";
+
+export interface BackupRow {
+  id: string;
+  label: string;
+  kind: BackupKind;
+  target_ref: string | null;
+  trigger_url: string | null;
+  last_run_at: string | null;
+  last_status: BackupStatus | null;
+  last_duration_ms: number | null;
+  last_size_bytes: number | null;
+  last_error: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export const backupsRepo = {
+  list(): BackupRow[] {
+    return db.prepare("SELECT * FROM backups ORDER BY created_at").all() as BackupRow[];
+  },
+  findById(id: string): BackupRow | undefined {
+    return db.prepare("SELECT * FROM backups WHERE id = ?").get(id) as BackupRow | undefined;
+  },
+  create(input: { label: string; kind: BackupKind; targetRef?: string; triggerUrl?: string; createdBy: string }) {
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO backups (id, label, kind, target_ref, trigger_url, created_by)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(id, input.label, input.kind, input.targetRef ?? null, input.triggerUrl ?? null, input.createdBy);
+    return id;
+  },
+  remove(id: string) {
+    db.prepare("DELETE FROM backups WHERE id = ?").run(id);
+  },
+  recordRun(id: string, result: { status: BackupStatus; durationMs?: number; sizeBytes?: number; error?: string }) {
+    db.prepare(
+      `UPDATE backups SET last_run_at = datetime('now'), last_status = ?, last_duration_ms = ?, last_size_bytes = ?, last_error = ?
+       WHERE id = ?`
+    ).run(result.status, result.durationMs ?? null, result.sizeBytes ?? null, result.error ?? null, id);
+  },
+};
+
+export type TriggerKind = "service_down" | "host_down";
+
+export interface AutomationRuleRow {
+  id: string;
+  name: string;
+  trigger_kind: TriggerKind;
+  trigger_target: string;
+  trigger_minutes: number;
+  action_key: string;
+  action_target: string;
+  cooldown_minutes: number;
+  enabled: number;
+  last_triggered_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export const automationRulesRepo = {
+  list(): AutomationRuleRow[] {
+    return db.prepare("SELECT * FROM automation_rules ORDER BY created_at").all() as AutomationRuleRow[];
+  },
+  listEnabled(): AutomationRuleRow[] {
+    return db.prepare("SELECT * FROM automation_rules WHERE enabled = 1").all() as AutomationRuleRow[];
+  },
+  create(input: {
+    name: string;
+    triggerKind: TriggerKind;
+    triggerTarget: string;
+    triggerMinutes: number;
+    actionKey: string;
+    actionTarget: string;
+    cooldownMinutes: number;
+    createdBy: string;
+  }) {
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO automation_rules (id, name, trigger_kind, trigger_target, trigger_minutes, action_key, action_target, cooldown_minutes, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      id,
+      input.name,
+      input.triggerKind,
+      input.triggerTarget,
+      input.triggerMinutes,
+      input.actionKey,
+      input.actionTarget,
+      input.cooldownMinutes,
+      input.createdBy
+    );
+    return id;
+  },
+  setEnabled(id: string, enabled: boolean) {
+    db.prepare("UPDATE automation_rules SET enabled = ? WHERE id = ?").run(enabled ? 1 : 0, id);
+  },
+  remove(id: string) {
+    db.prepare("DELETE FROM automation_rules WHERE id = ?").run(id);
+  },
+  markTriggered(id: string) {
+    db.prepare("UPDATE automation_rules SET last_triggered_at = datetime('now') WHERE id = ?").run(id);
+  },
+};
+
+export type NotificationKind = "discord" | "homeassistant";
+export type Severity = "info" | "warning" | "critical";
+
+export interface NotificationChannelRow {
+  id: string;
+  kind: NotificationKind;
+  target: string;
+  min_severity: Severity;
+  enabled: number;
+  created_at: string;
+}
+
+export const notificationChannelsRepo = {
+  list(): NotificationChannelRow[] {
+    return db.prepare("SELECT * FROM notification_channels ORDER BY created_at").all() as NotificationChannelRow[];
+  },
+  listEnabled(): NotificationChannelRow[] {
+    return db.prepare("SELECT * FROM notification_channels WHERE enabled = 1").all() as NotificationChannelRow[];
+  },
+  create(input: { kind: NotificationKind; target: string; minSeverity: Severity }) {
+    const id = randomUUID();
+    db.prepare(
+      `INSERT INTO notification_channels (id, kind, target, min_severity) VALUES (?, ?, ?, ?)`
+    ).run(id, input.kind, input.target, input.minSeverity);
+    return id;
+  },
+  setEnabled(id: string, enabled: boolean) {
+    db.prepare("UPDATE notification_channels SET enabled = ? WHERE id = ?").run(enabled ? 1 : 0, id);
+  },
+  remove(id: string) {
+    db.prepare("DELETE FROM notification_channels WHERE id = ?").run(id);
+  },
+};
+
+export interface UserPreferencesRow {
+  user_id: string;
+  cockpit_layout: string | null;
+  notifications_last_seen_at: string | null;
+  updated_at: string;
+}
+
+export const userPreferencesRepo = {
+  get(userId: string): UserPreferencesRow | undefined {
+    return db.prepare("SELECT * FROM user_preferences WHERE user_id = ?").get(userId) as
+      | UserPreferencesRow
+      | undefined;
+  },
+  setCockpitLayout(userId: string, layout: unknown) {
+    db.prepare(
+      `INSERT INTO user_preferences (user_id, cockpit_layout, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(user_id) DO UPDATE SET cockpit_layout = excluded.cockpit_layout, updated_at = datetime('now')`
+    ).run(userId, JSON.stringify(layout));
+  },
+  markNotificationsSeen(userId: string) {
+    db.prepare(
+      `INSERT INTO user_preferences (user_id, notifications_last_seen_at, updated_at) VALUES (?, datetime('now'), datetime('now'))
+       ON CONFLICT(user_id) DO UPDATE SET notifications_last_seen_at = datetime('now'), updated_at = datetime('now')`
+    ).run(userId);
+  },
+};
+
 export const quickActionsRepo = {
   list() {
     return db.prepare("SELECT * FROM quick_actions ORDER BY sort_order").all();

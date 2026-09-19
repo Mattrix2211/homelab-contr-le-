@@ -152,32 +152,73 @@ function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): Servi
 const CRITICAL_STATUSES: Status[] = ["offline"];
 const WARNING_STATUSES: Status[] = ["degraded", "warning"];
 
+// Set by the notification engine (section 25/44) so a brand-new alert can
+// be dispatched to Discord/Home Assistant without this module depending on
+// it directly.
+type AlertListener = (input: { severity: "warning" | "critical"; source: string; message: string }) => void;
+let onNewAlert: AlertListener | null = null;
+export function setAlertListener(fn: AlertListener) {
+  onNewAlert = fn;
+}
+
+function raiseAlert(source: string, severity: "warning" | "critical", message: string) {
+  if (!eventsRepo.hasActiveAlert(source, message)) {
+    eventsRepo.resolveAlertsBySource(source); // clear any stale differently-worded alert for this source first
+    eventsRepo.record({ category: "alert", severity, source, message });
+    onNewAlert?.({ severity, source, message });
+  }
+}
+
+// System Map correlation (section 40): when a critical host is down, its
+// dependent services necessarily go dark too. Rather than raise one alert
+// per affected service, roll them into the single host-level alert so a
+// single physical failure reads as one actionable item, not ten.
 function reconcileAlerts(hosts: HostStatus[], services: ServiceStatus[]) {
+  const downHostIds = new Set<string>();
+
   for (const h of hosts) {
     const source = `host:${h.id}`;
-    const message = `${h.name} is offline`;
     const def = HOSTS.find((x) => x.id === h.id);
     if (def?.critical && CRITICAL_STATUSES.includes(h.status)) {
-      if (!eventsRepo.hasActiveAlert(source, message)) {
-        eventsRepo.record({ category: "alert", severity: "critical", source, message });
-      }
+      downHostIds.add(h.id);
+      const affected = services.filter((s) => s.hostId === h.id && s.critical).map((s) => s.name);
+      const message =
+        affected.length > 0
+          ? `${h.name} is offline — ${affected.length} dependent service(s) affected: ${affected.join(", ")}`
+          : `${h.name} is offline`;
+      raiseAlert(source, "critical", message);
     } else {
       eventsRepo.resolveAlertsBySource(source);
     }
   }
 
+  // Docker daemon unreachable on its host, independent of the host itself
+  // being up (e.g. the LXC is up but the Docker service inside it crashed):
+  // also rolls all Docker-hosted critical services into one alert.
+  const dockerHost = hosts.find((h) => h.id === DOCKER_HOST_ID);
+  const dockerDown = !downHostIds.has(DOCKER_HOST_ID) && dockerAvailable() && !!dockerLastError();
+  const dockerSource = "integration:docker";
+  if (dockerDown) {
+    const affected = services.filter((s) => s.hostId === DOCKER_HOST_ID && s.critical).map((s) => s.name);
+    const message =
+      affected.length > 0
+        ? `Docker unreachable on ${dockerHost?.name ?? DOCKER_HOST_ID} — ${affected.length} service(s) affected: ${affected.join(", ")}`
+        : `Docker unreachable on ${dockerHost?.name ?? DOCKER_HOST_ID}`;
+    raiseAlert(dockerSource, "critical", message);
+  } else {
+    eventsRepo.resolveAlertsBySource(dockerSource);
+  }
+
   for (const s of services) {
     const source = `service:${s.id}`;
-    if (s.critical && CRITICAL_STATUSES.includes(s.status)) {
-      const message = `${s.name} is offline`;
-      if (!eventsRepo.hasActiveAlert(source, message)) {
-        eventsRepo.record({ category: "alert", severity: "critical", source, message });
-      }
+    const suppressed = downHostIds.has(s.hostId) || (dockerDown && s.hostId === DOCKER_HOST_ID);
+    if (suppressed) {
+      // Already covered by the host/docker rollup alert above.
+      eventsRepo.resolveAlertsBySource(source);
+    } else if (s.critical && CRITICAL_STATUSES.includes(s.status)) {
+      raiseAlert(source, "critical", `${s.name} is offline`);
     } else if (s.critical && WARNING_STATUSES.includes(s.status)) {
-      const message = `${s.name} is degraded`;
-      if (!eventsRepo.hasActiveAlert(source, message)) {
-        eventsRepo.record({ category: "alert", severity: "warning", source, message });
-      }
+      raiseAlert(source, "warning", `${s.name} is degraded`);
     } else {
       eventsRepo.resolveAlertsBySource(source);
     }

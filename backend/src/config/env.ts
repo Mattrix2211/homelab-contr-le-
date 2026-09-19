@@ -54,6 +54,38 @@ export const env = {
     enabled: bool(process.env.UPTIME_KUMA_ENABLED, false),
     baseUrl: process.env.UPTIME_KUMA_URL ?? "",
   },
+  adguard: {
+    enabled: bool(process.env.ADGUARD_ENABLED, false),
+    baseUrl: process.env.ADGUARD_URL ?? "",
+    username: process.env.ADGUARD_USERNAME ?? "",
+    password: process.env.ADGUARD_PASSWORD ?? "",
+  },
+  npm: {
+    enabled: bool(process.env.NPM_ENABLED, false),
+    baseUrl: process.env.NPM_URL ?? "",
+    identity: process.env.NPM_IDENTITY ?? "",
+    secret: process.env.NPM_SECRET ?? "",
+  },
+  // Targets the wg-easy REST API (the most common self-hosted WireGuard UI
+  // with a documented HTTP API). Plain wg-quick setups have no REST API
+  // and are not supported here - the host stays "not configured".
+  wireguard: {
+    enabled: bool(process.env.WIREGUARD_ENABLED, false),
+    baseUrl: process.env.WIREGUARD_URL ?? "",
+    password: process.env.WIREGUARD_PASSWORD ?? "",
+  },
+  frigate: {
+    enabled: bool(process.env.FRIGATE_ENABLED, false),
+    baseUrl: process.env.FRIGATE_URL ?? "",
+  },
+  zigbee2mqtt: {
+    enabled: bool(process.env.ZIGBEE2MQTT_ENABLED, false),
+    baseUrl: process.env.ZIGBEE2MQTT_URL ?? "",
+  },
+  updates: {
+    enabled: bool(process.env.UPDATE_CHECK_ENABLED, true),
+    intervalMinutes: num(process.env.UPDATE_CHECK_INTERVAL_MINUTES, 60),
+  },
 
   // Non-secret "open native UI" links (section 45). Safe to expose to the
   // frontend as-is - these are addresses, never credentials.
