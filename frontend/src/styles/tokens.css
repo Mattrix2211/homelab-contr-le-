@@ -1,21 +1,30 @@
 /* MK Design System v2.0 - HomeLab declination (dark-first, section 32-33) */
 :root {
-  --color-background: #0b1929;
-  --color-surface: #0f2942;
-  --color-border: #1a3a52;
-  --color-hover: #1e4060;
+  /* Near-neutral surfaces: blue is reserved for accents (signal/wake) so that
+     status colours and the active element are what stand out, not the chrome. */
+  --color-background: #0a0c10;
+  --color-sidebar: #07090c;
+  --color-surface: #13161d;
+  --color-border: #262b36;
+  --color-hover: #1d222c;
 
   --color-signal: #00b4d8;
   --color-wake: #48cae4;
-  --color-green-tech: #16b84e;
-  --color-amber: #f4a261;
-  --color-red: #e63946;
-  --color-mist: #8fafc7;
-  --color-fog: #6b8ba4;
+  --color-green-tech: #22c55e;
+  --color-amber: #f5a524;
+  --color-red: #ef4444;
+  --color-mist: #a3adbb;
+  --color-fog: #737d8c;
 
-  --color-text-primary: #eaf2f8;
+  --color-text-primary: #eef2f7;
   --color-text-secondary: var(--color-mist);
   --color-text-tertiary: var(--color-fog);
+
+  /* Translucent status tints, used for card backgrounds/borders */
+  --tint-online: rgba(34, 197, 94, 0.08);
+  --tint-warning: rgba(245, 165, 36, 0.10);
+  --tint-offline: rgba(239, 68, 68, 0.12);
+  --tint-signal: rgba(0, 180, 216, 0.12);
 
   --status-online: var(--color-green-tech);
   --status-degraded: var(--color-amber);

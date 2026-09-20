@@ -1,10 +1,10 @@
 import type { HostStatus } from "../api/types";
-import { formatPercent, formatUptime } from "../lib/format";
+import { formatPercent, formatUptime, loadTone } from "../lib/format";
 import { StatusBadge } from "./StatusBadge";
 
 export function HostCard({ host, onClick }: { host: HostStatus; onClick?: () => void }) {
   return (
-    <div className="card card--interactive" onClick={onClick}>
+    <div className={`card card--interactive card--status-${host.status}`} onClick={onClick}>
       <div className="host-card__header">
         <div>
           <div className="host-card__name">{host.name}</div>
@@ -21,11 +21,11 @@ export function HostCard({ host, onClick }: { host: HostStatus; onClick?: () => 
         <div className="host-card__metrics">
           <div className="metric-row">
             <span className="metric-row__label">CPU</span>
-            <span className="metric-row__value">{formatPercent(host.cpuPercent)}</span>
+            <span className={`metric-row__value ${loadTone(host.cpuPercent)}`}>{formatPercent(host.cpuPercent)}</span>
           </div>
           <div className="metric-row">
             <span className="metric-row__label">RAM</span>
-            <span className="metric-row__value">{formatPercent(host.ramPercent)}</span>
+            <span className={`metric-row__value ${loadTone(host.ramPercent)}`}>{formatPercent(host.ramPercent)}</span>
           </div>
           {host.tempC !== undefined && (
             <div className="metric-row">

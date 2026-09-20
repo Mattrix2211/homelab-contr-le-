@@ -1,6 +1,5 @@
 import { useQuickActionsList, useRunQuickAction } from "../api/hooks";
 import { ActionButton } from "./ActionButton";
-import { EmptyState } from "./EmptyState";
 
 export function QuickActionsPanel() {
   const { data } = useQuickActionsList();
@@ -9,9 +8,9 @@ export function QuickActionsPanel() {
 
   if (quickActions.length === 0) {
     return (
-      <div className="card">
-        <div className="section-title" style={{ marginBottom: 12 }}>Quick actions</div>
-        <EmptyState title="No quick actions pinned" description="Pin actions from Administration to see them here." />
+      <div className="card card--slim">
+        <span className="section-title">Quick actions</span>
+        <span className="text-tertiary" style={{ fontSize: 12.5 }}>None pinned — pin actions from Administration to see them here.</span>
       </div>
     );
   }

@@ -26,6 +26,26 @@ const DEFAULT_SECTIONS: SectionDef[] = [
   { id: "resources", label: "Global resources & activity" },
 ];
 
+type SummaryTone = "ok" | "warn" | "crit" | "muted";
+
+// all up = green, none up = red, in between = amber
+function ratioTone(online: number, total: number): SummaryTone {
+  if (total === 0) return "muted";
+  return online === total ? "ok" : online === 0 ? "crit" : "warn";
+}
+
+function SummaryStat({ label, value, total, tone }: { label: string; value: number; total?: number; tone: SummaryTone }) {
+  return (
+    <div className="summary__stat">
+      <span className={`summary__value ${tone}`}>
+        {value}
+        {total !== undefined && <small> / {total}</small>}
+      </span>
+      <span className="summary__label">{label}</span>
+    </div>
+  );
+}
+
 function useOrderedSections() {
   const { data } = useCockpitLayout();
   const layout = data?.layout;
@@ -229,16 +249,14 @@ export function Cockpit() {
       {customizing && <CustomizePanel onClose={() => setCustomizing(false)} />}
 
       <div className="card">
-        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-          <StatusBadge status={overallStatus} label={overallHealthy ? "HEALTHY" : criticalAlerts > 0 ? "ATTENTION NEEDED" : "MONITOR"} />
-          <span className="mono text-secondary">
-            {servicesOnline} / {services.length} services online
-          </span>
-          <span className="mono text-secondary">
-            {hostsOnline} / {hosts.length} hosts online
-          </span>
-          <span className="mono text-secondary">{criticalAlerts} critical alerts</span>
-          <span className="mono text-secondary">{warnings} warnings</span>
+        <div className="summary">
+          <div className="summary__state">
+            <StatusBadge status={overallStatus} label={overallHealthy ? "HEALTHY" : criticalAlerts > 0 ? "ATTENTION NEEDED" : "MONITOR"} />
+          </div>
+          <SummaryStat label="Services online" value={servicesOnline} total={services.length} tone={ratioTone(servicesOnline, services.length)} />
+          <SummaryStat label="Hosts online" value={hostsOnline} total={hosts.length} tone={ratioTone(hostsOnline, hosts.length)} />
+          <SummaryStat label="Critical alerts" value={criticalAlerts} tone={criticalAlerts > 0 ? "crit" : "muted"} />
+          <SummaryStat label="Warnings" value={warnings} tone={warnings > 0 ? "warn" : "muted"} />
         </div>
       </div>
 

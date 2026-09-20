@@ -13,6 +13,19 @@ export function formatPercent(v?: number): string {
   return `${Math.round(v)}%`;
 }
 
+// Colour tone for a utilisation percentage (host CPU/RAM).
+export function loadTone(v?: number): "warn" | "crit" | "" {
+  if (v === undefined || v === null || Number.isNaN(v)) return "";
+  return v > 85 ? "crit" : v > 70 ? "warn" : "";
+}
+
+// Docker reports container CPU as a share of ONE core, so a busy multi-threaded
+// container legitimately exceeds 100%. Say how many cores that is.
+export function cpuCoresHint(v?: number): string | null {
+  if (v === undefined || v === null || Number.isNaN(v) || v <= 100) return null;
+  return `≈${(v / 100).toFixed(1)} cores`;
+}
+
 export function formatMb(mb?: number): string {
   if (mb === undefined || mb === null || Number.isNaN(mb)) return "—";
   if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;

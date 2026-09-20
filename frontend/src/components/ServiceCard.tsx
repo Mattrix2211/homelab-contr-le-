@@ -1,10 +1,10 @@
 import type { ServiceStatus } from "../api/types";
-import { formatMb, formatPercent, formatUptime } from "../lib/format";
+import { cpuCoresHint, formatMb, formatPercent, formatUptime } from "../lib/format";
 import { StatusBadge } from "./StatusBadge";
 
 export function ServiceCard({ service, onClick }: { service: ServiceStatus; onClick?: () => void }) {
   return (
-    <div className="card card--interactive" onClick={onClick}>
+    <div className={`card card--interactive card--status-${service.status}`} onClick={onClick}>
       <div className="host-card__header">
         <div>
           <div className="host-card__name">{service.name}</div>
@@ -21,7 +21,10 @@ export function ServiceCard({ service, onClick }: { service: ServiceStatus; onCl
         <div className="host-card__metrics">
           <div className="metric-row">
             <span className="metric-row__label">CPU</span>
-            <span className="metric-row__value">{formatPercent(service.cpuPercent)}</span>
+            <span className="metric-row__value" title="Docker CPU: 100% = one full core">
+              {formatPercent(service.cpuPercent)}
+              {cpuCoresHint(service.cpuPercent) && <span className="metric-row__hint">{cpuCoresHint(service.cpuPercent)}</span>}
+            </span>
           </div>
           <div className="metric-row">
             <span className="metric-row__label">RAM</span>

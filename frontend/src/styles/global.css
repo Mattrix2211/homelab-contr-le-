@@ -80,7 +80,7 @@ button {
 }
 
 .sidebar {
-  background: var(--color-surface);
+  background: var(--color-sidebar);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
@@ -138,9 +138,12 @@ button {
 }
 
 .sidebar__link.active {
-  background: var(--color-hover);
-  color: var(--color-text-primary);
+  background: var(--tint-signal);
+  color: var(--color-wake);
   box-shadow: inset 2px 0 0 var(--color-signal);
+}
+.sidebar__link.active .sidebar__link-index {
+  color: var(--color-signal);
 }
 
 .sidebar__link-index {
@@ -174,7 +177,7 @@ button {
   padding: 0 var(--space-5);
   position: sticky;
   top: 0;
-  background: rgba(11, 25, 41, 0.85);
+  background: rgba(10, 12, 16, 0.85);
   backdrop-filter: blur(8px);
   z-index: 20;
 }
@@ -309,6 +312,75 @@ button {
 .status-badge--unknown { color: var(--status-unknown); }
 .status-badge--unknown .status-badge__dot { background: var(--status-unknown); }
 
+/* ---------- Status-driven cards ----------
+   Healthy cards stay calm; only cards that need attention change colour, so
+   problems stand out at a glance. "unknown" is dashed = not measured. */
+.card--status-online { border-left: 3px solid var(--status-online); }
+.card--status-degraded,
+.card--status-warning {
+  border-left: 3px solid var(--status-warning);
+  background: linear-gradient(90deg, var(--tint-warning), transparent 65%), var(--color-surface);
+}
+.card--status-offline {
+  border-left: 3px solid var(--status-offline);
+  background: linear-gradient(90deg, var(--tint-offline), transparent 65%), var(--color-surface);
+}
+.card--status-unknown {
+  border-style: dashed;
+  box-shadow: none;
+}
+.card--status-unknown .host-card__name { color: var(--color-text-secondary); }
+
+/* ---------- Summary strip (Cockpit) ---------- */
+.summary {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-5);
+  flex-wrap: wrap;
+}
+.summary__state {
+  display: flex;
+  align-items: center;
+  padding-right: var(--space-5);
+  border-right: 1px solid var(--color-border);
+}
+.summary__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.summary__value {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--color-text-primary);
+}
+.summary__value small {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+}
+.summary__value.ok { color: var(--status-online); }
+.summary__value.warn { color: var(--status-warning); }
+.summary__value.crit { color: var(--status-offline); }
+.summary__value.muted { color: var(--color-text-tertiary); }
+.summary__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary);
+}
+
+/* Slim variant of a card for empty optional panels */
+.card--slim {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: none;
+}
+
 /* ---------- Host / service cards ---------- */
 .host-card__header {
   display: flex;
@@ -341,6 +413,13 @@ button {
 }
 .metric-row__label {
   color: var(--color-text-tertiary);
+}
+.metric-row__value.warn { color: var(--color-amber); }
+.metric-row__value.crit { color: var(--color-red); }
+.metric-row__hint {
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  margin-left: 4px;
 }
 .metric-row__value {
   font-family: var(--font-mono);
@@ -466,7 +545,7 @@ button {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4, 10, 18, 0.6);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(2px);
   z-index: 100;
   display: flex;

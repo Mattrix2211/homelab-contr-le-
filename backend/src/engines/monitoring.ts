@@ -1,7 +1,7 @@
 import { HOSTS, SERVICES, DOCKER_HOST_ID, type HostDef, type ServiceDef } from "../config/registry.js";
 import { dockerAvailable, dockerLastError, listContainers } from "../integrations/docker.js";
 import { getNodeStatus, proxmoxAvailable, proxmoxLastError } from "../integrations/proxmox.js";
-import { promInstanceFor } from "../integrations/prometheus.js";
+import { promInstanceFor, promMetrics, prometheusAvailable } from "../integrations/prometheus.js";
 import { truenasAvailable, truenasLastError, listPools } from "../integrations/truenas.js";
 import { getStatus as getHaStatus, homeAssistantAvailable, homeAssistantLastError } from "../integrations/homeassistant.js";
 import { eventsRepo } from "../db/repo.js";
@@ -30,19 +30,41 @@ function findContainer(containers: ContainerInfo[], names: string[] | undefined)
 // rules), while "not configured at all" is the genuinely unknown case.
 // This is deliberately different from a service/app-level integration
 // (e.g. AdGuard unreachable doesn't mean its container is down).
+// Fallback for hosts whose native integration (Proxmox/TrueNAS/Home Assistant)
+// isn't configured: derive state from the node_exporter scrape target instead of
+// leaving the host "unknown". A down target is reported as "degraded", not
+// "offline" - a stopped node_exporter doesn't prove the machine is down, and
+// "offline" would raise a critical alert and drive the host_down automation.
+async function buildHostStatusFromPrometheus(host: HostDef, reason: string): Promise<HostStatus> {
+  const base = { id: host.id, name: host.name, role: host.role, ip: host.ip, kind: host.kind };
+  if (!prometheusAvailable()) return { ...base, status: "unknown", unavailableReason: reason };
+
+  const instance = promInstanceFor(host);
+  const up = await promMetrics.up(instance);
+  if (up === null) return { ...base, status: "unknown", unavailableReason: `${reason}; no Prometheus target "${instance}"` };
+  if (up < 1) {
+    return { ...base, status: "degraded", unavailableReason: `Prometheus target "${instance}" is down (node_exporter unreachable)` };
+  }
+
+  const [cpu, ram, temp, uptime] = await Promise.all([
+    promMetrics.cpuPercent(instance),
+    promMetrics.ramPercent(instance),
+    promMetrics.tempC(instance),
+    promMetrics.uptimeSeconds(instance),
+  ]);
+  return {
+    ...base,
+    status: "online",
+    cpuPercent: cpu === null ? undefined : Math.round(cpu * 10) / 10,
+    ramPercent: ram === null ? undefined : Math.round(ram * 10) / 10,
+    tempC: temp === null ? undefined : temp,
+    uptimeSeconds: uptime === null ? undefined : uptime,
+  };
+}
+
 async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Promise<HostStatus> {
   if (host.kind === "proxmox") {
-    if (!proxmoxAvailable()) {
-      return {
-        id: host.id,
-        name: host.name,
-        role: host.role,
-        ip: host.ip,
-        kind: host.kind,
-        status: "unknown",
-        unavailableReason: "Proxmox integration not configured",
-      };
-    }
+    if (!proxmoxAvailable()) return buildHostStatusFromPrometheus(host, "Proxmox integration not configured");
     const node = await getNodeStatus();
     if (!node) {
       return {
@@ -69,17 +91,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
   }
 
   if (host.kind === "truenas") {
-    if (!truenasAvailable()) {
-      return {
-        id: host.id,
-        name: host.name,
-        role: host.role,
-        ip: host.ip,
-        kind: host.kind,
-        status: "unknown",
-        unavailableReason: "TrueNAS integration not configured",
-      };
-    }
+    if (!truenasAvailable()) return buildHostStatusFromPrometheus(host, "TrueNAS integration not configured");
     const pools = await listPools();
     if (pools.length === 0) {
       // Either the API call failed (real error set) or it succeeded with a
@@ -120,15 +132,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
     };
   }
 
-  return {
-    id: host.id,
-    name: host.name,
-    role: host.role,
-    ip: host.ip,
-    kind: host.kind,
-    status: "unknown",
-    unavailableReason: "No integration configured for this host",
-  };
+  return buildHostStatusFromPrometheus(host, "No integration configured for this host");
 }
 
 function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): ServiceStatus {

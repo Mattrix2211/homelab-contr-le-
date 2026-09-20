@@ -81,4 +81,6 @@ export const promMetrics = {
     query(`node_hwmon_temp_celsius{instance="${instance}"}`),
   uptimeSeconds: (instance: string) =>
     query(`time() - node_boot_time_seconds{instance="${instance}"}`),
+  // 1 = scrape target reachable, 0 = down, null = no such target / Prometheus unreachable
+  up: (instance: string) => query(`up{instance="${instance}"}`),
 };
