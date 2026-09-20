@@ -13,7 +13,7 @@ export function ServiceCard({ service, onClick }: { service: ServiceStatus; onCl
         <StatusBadge status={service.status} />
       </div>
 
-      {service.status === "unknown" && service.unavailableReason ? (
+      {service.status !== "online" && service.unavailableReason ? (
         <div className="text-tertiary" style={{ fontSize: 12 }}>
           {service.unavailableReason}
         </div>

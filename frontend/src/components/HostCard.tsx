@@ -13,7 +13,7 @@ export function HostCard({ host, onClick }: { host: HostStatus; onClick?: () => 
         <StatusBadge status={host.status} />
       </div>
 
-      {host.status === "unknown" && host.unavailableReason ? (
+      {host.status !== "online" && host.unavailableReason ? (
         <div className="text-tertiary" style={{ fontSize: 12 }}>
           {host.unavailableReason}
         </div>
