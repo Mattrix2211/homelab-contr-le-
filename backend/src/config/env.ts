@@ -34,6 +34,12 @@ export const env = {
   prometheus: {
     enabled: bool(process.env.PROMETHEUS_ENABLED, false),
     baseUrl: process.env.PROMETHEUS_URL ?? "",
+    // Per-host `instance` label override; defaults to "<ip>:9100" when unset.
+    instances: {
+      rpi: process.env.PROMETHEUS_INSTANCE_RPI ?? "",
+      m83: process.env.PROMETHEUS_INSTANCE_M83 ?? "",
+      m710q: process.env.PROMETHEUS_INSTANCE_M710Q ?? "",
+    } as Record<string, string>,
   },
   proxmox: {
     enabled: bool(process.env.PROXMOX_ENABLED, false),

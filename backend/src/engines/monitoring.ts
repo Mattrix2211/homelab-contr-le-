@@ -1,6 +1,7 @@
 import { HOSTS, SERVICES, DOCKER_HOST_ID, type HostDef, type ServiceDef } from "../config/registry.js";
 import { dockerAvailable, dockerLastError, listContainers } from "../integrations/docker.js";
 import { getNodeStatus, proxmoxAvailable, proxmoxLastError } from "../integrations/proxmox.js";
+import { promInstanceFor } from "../integrations/prometheus.js";
 import { truenasAvailable, truenasLastError, listPools } from "../integrations/truenas.js";
 import { getStatus as getHaStatus, homeAssistantAvailable, homeAssistantLastError } from "../integrations/homeassistant.js";
 import { eventsRepo } from "../db/repo.js";
@@ -264,7 +265,9 @@ export async function refreshSnapshot(): Promise<Snapshot> {
     lastGoodContainersAt = Date.now();
   }
 
-  const hosts = await Promise.all(HOSTS.map((h) => buildHostStatus(h, containers)));
+  const hosts = await Promise.all(
+    HOSTS.map(async (h) => ({ ...(await buildHostStatus(h, containers)), promInstance: promInstanceFor(h) }))
+  );
   const services = SERVICES.map((s) => buildServiceStatus(s, containers));
 
   reconcileAlerts(hosts, services);

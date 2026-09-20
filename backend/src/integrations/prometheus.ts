@@ -60,9 +60,14 @@ export async function queryRange(
   }
 }
 
-// Best-effort node_exporter-style queries. Instance label is expected to be
-// "<ip>:9100" per Prometheus scrape config; adjust in Administration if the
-// HomeLab uses different job/instance labeling.
+// The `instance` label a host's node_exporter series carries: the
+// PROMETHEUS_INSTANCE_<HOST> override if set (scrape configs often relabel it
+// to a friendly name), otherwise the default "<ip>:9100".
+export function promInstanceFor(host: { id: string; ip: string }): string {
+  return env.prometheus.instances[host.id] || `${host.ip}:9100`;
+}
+
+// Best-effort node_exporter-style queries, keyed on the instance label above.
 export const promMetrics = {
   cpuPercent: (instance: string) =>
     query(

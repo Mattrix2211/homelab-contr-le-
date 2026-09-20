@@ -23,6 +23,7 @@ export interface HostStatus {
   name: string;
   role: string;
   ip: string;
+  promInstance?: string; // Prometheus `instance` label for this host's node_exporter
   kind: "proxmox" | "truenas" | "standalone";
   status: Status;
   cpuPercent?: number;

@@ -94,7 +94,7 @@ export function Monitoring() {
 
   const host = hosts.find((h) => h.id === hostId);
   const metric = METRICS.find((m) => m.id === metricId)!;
-  const instance = host ? `${host.ip}:9100` : "";
+  const instance = host ? (host.promInstance ?? `${host.ip}:9100`) : "";
   const promql = metric.query(instance);
 
   const { data: rangeData, isLoading } = useMetricRange(promql, period.minutes, period.step, !!available?.available && !!host);

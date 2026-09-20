@@ -6,6 +6,7 @@ export interface HostStatus {
   name: string;
   role: string;
   ip: string;
+  promInstance?: string;
   kind: "proxmox" | "truenas" | "standalone";
   status: Status;
   cpuPercent?: number;

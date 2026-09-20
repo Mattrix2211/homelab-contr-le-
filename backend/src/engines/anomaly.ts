@@ -12,7 +12,7 @@
 
 import { env } from "../config/env.js";
 import { HOSTS } from "../config/registry.js";
-import { prometheusAvailable, promMetrics, queryRange } from "../integrations/prometheus.js";
+import { prometheusAvailable, promInstanceFor, promMetrics, queryRange } from "../integrations/prometheus.js";
 import { eventsRepo } from "../db/repo.js";
 import { raiseAlert } from "./monitoring.js";
 
@@ -120,7 +120,7 @@ export async function refreshAnomalies(): Promise<void> {
 
   const targets = HOSTS.filter((h) => h.ip && h.ip !== "unknown");
   const results = await Promise.all(
-    targets.flatMap((h) => METRICS.map((m) => checkOne(h.id, h.name, `${h.ip}:9100`, m)))
+    targets.flatMap((h) => METRICS.map((m) => checkOne(h.id, h.name, promInstanceFor(h), m)))
   );
   cache = results.filter((r): r is AnomalyInfo => r !== null);
   checkedAt = new Date().toISOString();

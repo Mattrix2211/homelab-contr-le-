@@ -20,7 +20,7 @@ export const HOSTS: HostDef[] = [
     id: "rpi",
     name: "Raspberry Pi",
     role: "Domotique critique",
-    ip: "unknown",
+    ip: "192.168.1.152",
     kind: "standalone",
     critical: true,
   },
