@@ -49,17 +49,17 @@ export function Events() {
     <div className="page">
       <div className="page__header">
         <div>
-          <div className="page__title">Events</div>
-          <div className="page__subtitle">Alerts, system events, and user actions</div>
+          <div className="page__title">Événements</div>
+          <div className="page__subtitle">Alertes, événements système et actions des utilisateurs</div>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button className={`btn btn--sm ${tab === "alerts" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("alerts")}>Alerts</button>
-        <button className={`btn btn--sm ${tab === "system" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("system")}>System events</button>
-        <button className={`btn btn--sm ${tab === "actions" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("actions")}>User actions</button>
+        <button className={`btn btn--sm ${tab === "alerts" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("alerts")}>Alertes</button>
+        <button className={`btn btn--sm ${tab === "system" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("system")}>Événements système</button>
+        <button className={`btn btn--sm ${tab === "actions" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("actions")}>Actions utilisateur</button>
         {user?.role === "admin" && (
-          <button className={`btn btn--sm ${tab === "audit" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("audit")}>Audit log</button>
+          <button className={`btn btn--sm ${tab === "audit" ? "btn--primary" : "btn--ghost"}`} onClick={() => setTab("audit")}>Journal d’audit</button>
         )}
       </div>
 
@@ -70,13 +70,13 @@ export function Events() {
             onChange={(e) => setSeverity(e.target.value as Severity)}
             style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", color: "var(--color-text-primary)", padding: "6px 10px" }}
           >
-            <option value="all">All severities</option>
+            <option value="all">Toutes les gravités</option>
             <option value="info">Info</option>
-            <option value="warning">Warning</option>
-            <option value="critical">Critical</option>
+            <option value="warning">Avertissement</option>
+            <option value="critical">Critique</option>
           </select>
           <input
-            placeholder="Filter by source…"
+            placeholder="Filtrer par source…"
             value={source}
             onChange={(e) => setSource(e.target.value)}
             style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
@@ -84,7 +84,7 @@ export function Events() {
           <div style={{ display: "flex", gap: 6 }}>
             {(["24h", "7d", "30d", "all"] as Range[]).map((r) => (
               <button key={r} className={`btn btn--sm ${range === r ? "btn--primary" : "btn--ghost"}`} onClick={() => setRange(r)}>
-                {r === "all" ? "All time" : r.toUpperCase()}
+                {r === "all" ? "Tout" : r.toUpperCase()}
               </button>
             ))}
           </div>
@@ -94,7 +94,7 @@ export function Events() {
       <div className="card" style={{ padding: 0 }}>
         {tab === "audit" ? (
           !auditData?.entries.length ? (
-            <EmptyState title="No audit entries yet" />
+            <EmptyState title="Aucune entrée d’audit pour l’instant" />
           ) : (
             <div className="row-list">
               {auditData.entries.map((e) => (
@@ -108,7 +108,7 @@ export function Events() {
                     className={`status-badge status-badge--${e.result === "success" ? "online" : e.result === "denied" ? "warning" : "offline"}`}
                   >
                     <span className="status-badge__dot" />
-                    {e.result}
+                    {e.result === "success" ? "succès" : e.result === "denied" ? "refusé" : "échec"}
                   </span>
                   {e.duration_ms !== null && <span className="mono text-tertiary" style={{ width: 70, textAlign: "right" }}>{e.duration_ms} ms</span>}
                 </div>
@@ -116,7 +116,7 @@ export function Events() {
             </div>
           )
         ) : filtered.length === 0 ? (
-          <EmptyState title="Nothing here yet" description="A healthy HomeLab produces a quiet timeline." />
+          <EmptyState title="Rien à afficher pour l’instant" description="Un HomeLab en bonne santé a une chronologie calme." />
         ) : (
           <div className="row-list">
             {filtered.map((e) => (

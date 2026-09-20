@@ -3,27 +3,35 @@ export function formatUptime(seconds?: number): string {
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}d ${String(h).padStart(2, "0")}h`;
-  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
-  return `${m}m`;
+  if (d > 0) return `${d} j ${String(h).padStart(2, "0")} h`;
+  if (h > 0) return `${h} h ${String(m).padStart(2, "0")} min`;
+  return `${m} min`;
 }
 
 export function formatPercent(v?: number): string {
   if (v === undefined || v === null || Number.isNaN(v)) return "—";
-  return `${Math.round(v)}%`;
-}
-
-// Colour tone for a utilisation percentage (host CPU/RAM).
-export function loadTone(v?: number): "warn" | "crit" | "" {
-  if (v === undefined || v === null || Number.isNaN(v)) return "";
-  return v > 85 ? "crit" : v > 70 ? "warn" : "";
+  return `${Math.round(v)} %`;
 }
 
 // Docker reports container CPU as a share of ONE core, so a busy multi-threaded
 // container legitimately exceeds 100%. Say how many cores that is.
 export function cpuCoresHint(v?: number): string | null {
   if (v === undefined || v === null || Number.isNaN(v) || v <= 100) return null;
-  return `≈${(v / 100).toFixed(1)} cores`;
+  return `≈${(v / 100).toFixed(1)} cœurs`;
+}
+
+// Service categories come from the backend registry in English/mixed form.
+const CATEGORY_LABELS: Record<string, string> = {
+  domotique: "domotique",
+  platform: "plateforme",
+  network: "réseau",
+  media: "média",
+  monitoring: "supervision",
+  storage: "stockage",
+};
+
+export function formatCategory(category: string): string {
+  return CATEGORY_LABELS[category] ?? category;
 }
 
 export function formatMb(mb?: number): string {
@@ -48,16 +56,16 @@ export function formatRelativeTime(iso: string): string {
   const date = new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`);
   const diffMs = Date.now() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
-  if (diffSec < 60) return "just now";
+  if (diffSec < 60) return "à l’instant";
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? "s" : ""} ago`;
+  if (diffMin < 60) return `il y a ${diffMin} min`;
   const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
+  if (diffHour < 24) return `il y a ${diffHour} h`;
   const diffDay = Math.floor(diffHour / 24);
-  return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`;
+  return `il y a ${diffDay} j`;
 }
 
 export function formatClock(iso: string): string {
   const date = new Date(iso.endsWith("Z") || iso.includes("+") ? iso : `${iso}Z`);
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }

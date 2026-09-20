@@ -2,13 +2,14 @@ import { notificationChannelsRepo, type NotificationChannelRow, type Severity } 
 import { callService } from "./homeassistant.js";
 
 const SEVERITY_RANK: Record<Severity, number> = { info: 1, warning: 2, critical: 3 };
+const SEVERITY_LABEL: Record<Severity, string> = { info: "INFO", warning: "AVERTISSEMENT", critical: "CRITIQUE" };
 
 async function sendDiscord(webhookUrl: string, severity: Severity, source: string, message: string): Promise<void> {
   const prefix = severity === "critical" ? "🔴" : severity === "warning" ? "🟠" : "ℹ️";
   await fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: `${prefix} **${severity.toUpperCase()}** — ${message} _(${source})_` }),
+    body: JSON.stringify({ content: `${prefix} **${SEVERITY_LABEL[severity]}** — ${message} _(${source})_` }),
     signal: AbortSignal.timeout(5000),
   });
 }
@@ -18,7 +19,7 @@ async function sendHomeAssistant(notifyService: string, severity: Severity, mess
   // how a HomeLab cockpit reaches a phone without standing up its own push
   // infrastructure (section 25's "notification mobile").
   await callService("notify", notifyService, {
-    title: `HomeLab — ${severity.toUpperCase()}`,
+    title: `HomeLab — ${SEVERITY_LABEL[severity]}`,
     message,
   });
 }
@@ -46,5 +47,5 @@ export function dispatchAlert(input: { severity: "warning" | "critical"; source:
 }
 
 export async function sendTestNotification(channel: NotificationChannelRow): Promise<void> {
-  await sendToChannel(channel, "info", "administration", "Test notification from MK HomeLab Control Center.");
+  await sendToChannel(channel, "info", "administration", "Notification de test de MK HomeLab Control Center.");
 }

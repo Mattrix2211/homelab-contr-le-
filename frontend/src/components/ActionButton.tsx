@@ -26,10 +26,10 @@ export function ActionButton({ label, level, confirmBody, variant = "ghost", dis
     setLoading(true);
     try {
       await onRun();
-      push("success", `${label} succeeded`);
+      push("success", `${label} : réussi`);
       setConfirming(false);
     } catch (err) {
-      push("error", err instanceof Error ? err.message : `${label} failed`);
+      push("error", err instanceof Error ? err.message : `${label} : échec`);
     } finally {
       setLoading(false);
     }
@@ -46,12 +46,12 @@ export function ActionButton({ label, level, confirmBody, variant = "ghost", dis
   return (
     <>
       <button className={`btn btn--sm btn--${variant}`} onClick={handleClick} disabled={disabled || loading}>
-        {loading && level < 2 ? "Working…" : label}
+        {loading && level < 2 ? "En cours…" : label}
       </button>
       {confirming && (
         <ConfirmModal
           title={`${label}?`}
-          body={confirmBody ?? `This will ${label.toLowerCase()}.`}
+          body={confirmBody ?? `Cette action va exécuter : ${label.toLowerCase()}.`}
           confirmLabel={label}
           critical={level === 3}
           loading={loading}

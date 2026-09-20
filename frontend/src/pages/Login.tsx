@@ -29,14 +29,14 @@ export function Login() {
           <span className="sidebar__brand-mark">MK</span>
           <div>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600 }}>HomeLab Control Center</div>
-            <div className="text-tertiary" style={{ fontSize: 11 }}>Monitor · Understand · Act</div>
+            <div className="text-tertiary" style={{ fontSize: 11 }}>Surveiller · Comprendre · Agir</div>
           </div>
         </div>
 
         {error && <div className="form-error">{error}</div>}
 
         <div className="field">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">E-mail</label>
           <input
             id="email"
             type="email"
@@ -47,7 +47,7 @@ export function Login() {
           />
         </div>
         <div className="field">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Mot de passe</label>
           <input
             id="password"
             type="password"
@@ -58,7 +58,7 @@ export function Login() {
           />
         </div>
         <button className="btn btn--primary" type="submit" disabled={submitting} style={{ width: "100%" }}>
-          {submitting ? "Signing in…" : "Sign in"}
+          {submitting ? "Connexion…" : "Se connecter"}
         </button>
       </form>
     </div>

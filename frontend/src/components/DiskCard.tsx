@@ -17,11 +17,11 @@ export function DiskCard({ disk }: { disk: Disk }) {
           <div className="host-card__name">{disk.name}</div>
           {disk.model && <div className="host-card__role">{disk.model}</div>}
         </div>
-        <StatusBadge status={status} label={disk.smartPassed === null ? "Unknown" : disk.smartPassed ? "SMART PASSED" : "SMART FAILED"} />
+        <StatusBadge status={status} label={disk.smartPassed === null ? "Inconnu" : disk.smartPassed ? "SMART OK" : "SMART ÉCHEC"} />
       </div>
       <div className="host-card__metrics">
         <div className="metric-row">
-          <span className="metric-row__label">Temp</span>
+          <span className="metric-row__label">Temp.</span>
           <span className="metric-row__value">{disk.tempC !== null ? `${Math.round(disk.tempC)}°C` : "—"}</span>
         </div>
       </div>
@@ -38,11 +38,11 @@ export function DiskCard({ disk }: { disk: Disk }) {
             padding: "4px 6px",
           }}
         >
-          <option value="SHORT">Short test</option>
-          <option value="LONG">Long test</option>
+          <option value="SHORT">Test court</option>
+          <option value="LONG">Test long</option>
         </select>
         <ActionButton
-          label="Run SMART test"
+          label="Lancer un test SMART"
           level={1}
           onRun={() => runSmart.mutateAsync({ disk: disk.name, type: testType })}
         />

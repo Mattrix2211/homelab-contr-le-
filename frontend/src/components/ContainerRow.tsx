@@ -23,7 +23,7 @@ export function ContainerRow({
         {hasUpdate && (
           <span className="status-badge status-badge--warning" style={{ marginLeft: 8 }}>
             <span className="status-badge__dot" />
-            Update
+            Mise à jour
           </span>
         )}
         <div className="row__secondary mono">{container.image}</div>
@@ -44,21 +44,21 @@ export function ContainerRow({
         {running ? (
           <>
             <ActionButton
-              label="Restart"
+              label="Redémarrer"
               level={2}
-              confirmBody={`${container.name} will be temporarily unavailable.`}
+              confirmBody={`${container.name} sera temporairement indisponible.`}
               onRun={() => mutation.mutateAsync({ id: container.id, action: "restart" })}
             />
             <ActionButton
-              label="Stop"
+              label="Arrêter"
               level={2}
-              confirmBody={`${container.name} will stop responding.`}
+              confirmBody={`${container.name} ne répondra plus.`}
               onRun={() => mutation.mutateAsync({ id: container.id, action: "stop" })}
             />
           </>
         ) : (
           <ActionButton
-            label="Start"
+            label="Démarrer"
             level={1}
             onRun={() => mutation.mutateAsync({ id: container.id, action: "start" })}
           />

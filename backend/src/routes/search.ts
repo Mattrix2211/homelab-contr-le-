@@ -7,12 +7,13 @@ const PAGES = [
   { id: "cockpit", label: "Cockpit", path: "/" },
   { id: "infrastructure", label: "Infrastructure", path: "/infrastructure" },
   { id: "services", label: "Services", path: "/services" },
-  { id: "storage", label: "Storage", path: "/storage" },
-  { id: "network", label: "Network", path: "/network" },
+  { id: "storage", label: "Stockage", path: "/storage" },
+  { id: "network", label: "Réseau", path: "/network" },
   { id: "homeassistant", label: "Home Assistant", path: "/home-assistant" },
-  { id: "monitoring", label: "Monitoring", path: "/monitoring" },
-  { id: "events", label: "Events", path: "/events" },
+  { id: "monitoring", label: "Supervision", path: "/monitoring" },
+  { id: "events", label: "Événements", path: "/events" },
   { id: "administration", label: "Administration", path: "/administration" },
+  { id: "settings", label: "Paramètres", path: "/parametres" },
 ];
 
 searchRouter.get("/", (req, res) => {

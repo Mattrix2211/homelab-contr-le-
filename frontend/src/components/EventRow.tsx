@@ -2,8 +2,8 @@ import type { EventRow as EventRowType } from "../api/types";
 import { formatClock } from "../lib/format";
 
 const CATEGORY_LABEL: Record<EventRowType["category"], string> = {
-  alert: "ALERT",
-  system: "SYSTEM",
+  alert: "ALERTE",
+  system: "SYSTÈME",
   action: "ACTION",
 };
 

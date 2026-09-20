@@ -9,6 +9,14 @@ import { formatMb, formatPercent, formatRelativeTime, formatUptime } from "../li
 
 type Filter = "all" | "running" | "stopped" | "unhealthy" | "updates";
 
+const FILTER_LABEL: Record<Filter, string> = {
+  all: "Tous",
+  running: "En marche",
+  stopped: "Arrêtés",
+  unhealthy: "En défaut",
+  updates: "Mises à jour",
+};
+
 function FrigatePanel() {
   const { data } = useFrigateStatus();
   if (!data?.available) {
@@ -16,7 +24,7 @@ function FrigatePanel() {
       <div className="drawer__section">
         <div className="section-title" style={{ marginBottom: 8 }}>Frigate</div>
         <p className="text-tertiary" style={{ fontSize: 12.5 }}>
-          Set FRIGATE_ENABLED=true and FRIGATE_URL to see cameras and recent events here.
+          Définissez FRIGATE_ENABLED=true et FRIGATE_URL pour voir ici les caméras et les événements récents.
         </p>
       </div>
     );
@@ -24,7 +32,7 @@ function FrigatePanel() {
   return (
     <>
       <div className="drawer__section">
-        <div className="section-title" style={{ marginBottom: 8 }}>Cameras</div>
+        <div className="section-title" style={{ marginBottom: 8 }}>Caméras</div>
         <div className="row-list">
           {data.cameras.map((c) => (
             <div className="row" key={c.name}>
@@ -38,15 +46,15 @@ function FrigatePanel() {
         </div>
       </div>
       <div className="drawer__section">
-        <div className="section-title" style={{ marginBottom: 8 }}>Recent events</div>
+        <div className="section-title" style={{ marginBottom: 8 }}>Événements récents</div>
         {data.events.length === 0 ? (
-          <p className="text-tertiary" style={{ fontSize: 12.5 }}>No recent detections.</p>
+          <p className="text-tertiary" style={{ fontSize: 12.5 }}>Aucune détection récente.</p>
         ) : (
           <div className="row-list">
             {data.events.map((e) => (
               <div className="row" key={e.id}>
                 <span className="row__primary">
-                  {e.label} on {e.camera}
+                  {e.label} sur {e.camera}
                   <div className="row__secondary">{formatRelativeTime(e.startTime)}</div>
                 </span>
               </div>
@@ -93,13 +101,13 @@ export function Services() {
       <div className="page__header">
         <div>
           <div className="page__title">Services</div>
-          <div className="page__subtitle">Docker containers powering the HomeLab</div>
+          <div className="page__subtitle">Conteneurs Docker qui font tourner le HomeLab</div>
         </div>
       </div>
 
       <div className="card" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <input
-          placeholder="Search containers…"
+          placeholder="Rechercher un conteneur…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={{
@@ -114,7 +122,7 @@ export function Services() {
         />
         {(["all", "running", "stopped", "unhealthy", "updates"] as Filter[]).map((f) => (
           <button key={f} className={`btn btn--sm ${filter === f ? "btn--primary" : "btn--ghost"}`} onClick={() => setFilter(f)}>
-            {f[0].toUpperCase() + f.slice(1)}
+            {FILTER_LABEL[f]}
           </button>
         ))}
       </div>
@@ -127,7 +135,7 @@ export function Services() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState title="No containers match" description="Adjust filters or check the Docker integration in Administration." />
+          <EmptyState title="Aucun conteneur ne correspond" description="Ajustez les filtres ou vérifiez l’intégration Docker (voir Administration)." />
         ) : (
           <div className="row-list">
             {filtered.map((c) => (
@@ -151,7 +159,7 @@ export function Services() {
               </span>
             </div>
             <div className="metric-row" style={{ padding: "6px 0", borderBottom: "1px solid var(--color-border)" }}>
-              <span className="metric-row__label">Uptime</span>
+              <span className="metric-row__label">Actif depuis</span>
               <span className="metric-row__value">{formatUptime(open.uptimeSeconds)}</span>
             </div>
             <div className="metric-row" style={{ padding: "6px 0" }}>
@@ -160,7 +168,7 @@ export function Services() {
             </div>
           </div>
           <div className="drawer__section">
-            <div className="section-title" style={{ marginBottom: 8 }}>Recent logs</div>
+            <div className="section-title" style={{ marginBottom: 8 }}>Logs récents</div>
             <pre
               className="mono"
               style={{
@@ -174,7 +182,7 @@ export function Services() {
                 whiteSpace: "pre-wrap",
               }}
             >
-              {logsData?.logs || "No logs available."}
+              {logsData?.logs || "Aucun log disponible."}
             </pre>
           </div>
           {open.name.toLowerCase().includes("frigate") && <FrigatePanel />}

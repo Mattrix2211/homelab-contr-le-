@@ -6,7 +6,7 @@ export function AlertCard({ alert }: { alert: EventRow }) {
   return (
     <div className={`alert-card alert-card--${level}`}>
       <div>
-        <div className="alert-card__label">{level}</div>
+        <div className="alert-card__label">{level === "critical" ? "critique" : "avertissement"}</div>
         <div className="alert-card__message">{alert.message}</div>
       </div>
       <div className="alert-card__time">{formatRelativeTime(alert.created_at)}</div>

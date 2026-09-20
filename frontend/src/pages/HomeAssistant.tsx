@@ -21,21 +21,21 @@ export function HomeAssistant() {
       <div className="page__header">
         <div>
           <div className="page__title">Home Assistant</div>
-          <div className="page__subtitle">Domotique ecosystem health — Raspberry Pi</div>
+          <div className="page__subtitle">État de l’écosystème domotique — Raspberry Pi</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <OpenLinkButton linkKey="homeassistant" label="Open Home Assistant" />
+          <OpenLinkButton linkKey="homeassistant" label="Ouvrir Home Assistant" />
           <ActionButton
-            label="Restart Home Assistant"
+            label="Redémarrer Home Assistant"
             level={2}
-            confirmBody="All automations and the dashboard will be briefly unavailable."
+            confirmBody="Toutes les automatisations et le tableau de bord seront brièvement indisponibles."
             onRun={() => restart.mutateAsync()}
           />
         </div>
       </div>
 
       {services.length === 0 ? (
-        <EmptyState title="Domotique stack not reporting" description="Configure HOMEASSISTANT_URL and HOMEASSISTANT_TOKEN in Administration." />
+        <EmptyState title="La pile domotique ne remonte aucune donnée" description="Configurez HOMEASSISTANT_URL et HOMEASSISTANT_TOKEN dans le fichier .env du serveur." />
       ) : (
         <div className="grid grid--services">
           {services.map((s) => (
@@ -45,25 +45,25 @@ export function HomeAssistant() {
       )}
 
       {entitiesData?.available === false ? (
-        <EmptyState title="Entity health not available" description="Configure HOMEASSISTANT_URL and HOMEASSISTANT_TOKEN to see entity/Zigbee counts." />
+        <EmptyState title="Santé des entités indisponible" description="Configurez HOMEASSISTANT_URL et HOMEASSISTANT_TOKEN pour voir le nombre d’entités et d’appareils Zigbee." />
       ) : summary ? (
         <div className="card">
-          <div className="section-title" style={{ marginBottom: 12 }}>Entity health</div>
+          <div className="section-title" style={{ marginBottom: 12 }}>Santé des entités</div>
           <div className="grid grid--metrics">
-            <MetricCard label="Total entities" value={summary.totalEntities.toLocaleString()} />
+            <MetricCard label="Entités au total" value={summary.totalEntities.toLocaleString()} />
             <MetricCard
-              label="Unavailable"
+              label="Indisponibles"
               value={summary.unavailableCount.toLocaleString()}
               tone={summary.unavailableCount > 0 ? "warn" : undefined}
             />
             <MetricCard
-              label="Zigbee devices"
+              label="Appareils Zigbee"
               value={zigbeeData?.available && zigbeeData.count !== null ? String(zigbeeData.count) : "—"}
             />
           </div>
           {summary.unavailableEntities.length > 0 && (
             <div style={{ marginTop: 16 }}>
-              <div className="section-title" style={{ marginBottom: 8 }}>Unavailable entities</div>
+              <div className="section-title" style={{ marginBottom: 8 }}>Entités indisponibles</div>
               <div className="row-list">
                 {summary.unavailableEntities.map((e) => (
                   <div className="row" key={e.entityId}>

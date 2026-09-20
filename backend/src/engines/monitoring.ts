@@ -41,9 +41,9 @@ async function buildHostStatusFromPrometheus(host: HostDef, reason: string): Pro
 
   const instance = promInstanceFor(host);
   const up = await promMetrics.up(instance);
-  if (up === null) return { ...base, status: "unknown", unavailableReason: `${reason}; no Prometheus target "${instance}"` };
+  if (up === null) return { ...base, status: "unknown", unavailableReason: `${reason} ; aucune cible Prometheus « ${instance} »` };
   if (up < 1) {
-    return { ...base, status: "degraded", unavailableReason: `Prometheus target "${instance}" is down (node_exporter unreachable)` };
+    return { ...base, status: "degraded", unavailableReason: `La cible Prometheus « ${instance} » est arrêtée (node_exporter injoignable)` };
   }
 
   const [cpu, ram, temp, uptime] = await Promise.all([
@@ -64,7 +64,7 @@ async function buildHostStatusFromPrometheus(host: HostDef, reason: string): Pro
 
 async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Promise<HostStatus> {
   if (host.kind === "proxmox") {
-    if (!proxmoxAvailable()) return buildHostStatusFromPrometheus(host, "Proxmox integration not configured");
+    if (!proxmoxAvailable()) return buildHostStatusFromPrometheus(host, "Intégration Proxmox non configurée");
     const node = await getNodeStatus();
     if (!node) {
       return {
@@ -74,7 +74,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
         ip: host.ip,
         kind: host.kind,
         status: "offline",
-        unavailableReason: proxmoxLastError() ?? "Proxmox API unreachable",
+        unavailableReason: proxmoxLastError() ?? "API Proxmox injoignable",
       };
     }
     return {
@@ -91,7 +91,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
   }
 
   if (host.kind === "truenas") {
-    if (!truenasAvailable()) return buildHostStatusFromPrometheus(host, "TrueNAS integration not configured");
+    if (!truenasAvailable()) return buildHostStatusFromPrometheus(host, "Intégration TrueNAS non configurée");
     const pools = await listPools();
     if (pools.length === 0) {
       // Either the API call failed (real error set) or it succeeded with a
@@ -104,7 +104,7 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
         ip: host.ip,
         kind: host.kind,
         status: error ? "offline" : "unknown",
-        unavailableReason: error ?? "No pools reported",
+        unavailableReason: error ?? "Aucun pool remonté",
       };
     }
     const healthy = pools.every((p) => p.healthy);
@@ -120,19 +120,25 @@ async function buildHostStatus(host: HostDef, containers: ContainerInfo[]): Prom
 
   // standalone (Raspberry Pi / Home Assistant host)
   if (homeAssistantAvailable()) {
-    const ha = await getHaStatus();
+    // Home Assistant decides up/down; node_exporter (if scraped) supplies the
+    // CPU/RAM/temp/uptime figures HA doesn't report.
+    const [ha, prom] = await Promise.all([getHaStatus(), buildHostStatusFromPrometheus(host, "")]);
     return {
       id: host.id,
       name: host.name,
       role: host.role,
       ip: host.ip,
       kind: host.kind,
+      cpuPercent: prom.cpuPercent,
+      ramPercent: prom.ramPercent,
+      tempC: prom.tempC,
+      uptimeSeconds: prom.uptimeSeconds,
       status: ha ? "online" : "offline",
-      unavailableReason: ha ? undefined : (homeAssistantLastError() ?? "Home Assistant unreachable"),
+      unavailableReason: ha ? undefined : (homeAssistantLastError() ?? "Home Assistant injoignable"),
     };
   }
 
-  return buildHostStatusFromPrometheus(host, "No integration configured for this host");
+  return buildHostStatusFromPrometheus(host, "Aucune intégration configurée pour cette machine");
 }
 
 function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): ServiceStatus {
@@ -147,7 +153,7 @@ function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): Servi
 
   if (svc.hostId === DOCKER_HOST_ID && svc.containerNames) {
     if (!dockerAvailable()) {
-      return { ...base, status: "unknown", unavailableReason: "Docker integration not configured" };
+      return { ...base, status: "unknown", unavailableReason: "Intégration Docker non configurée" };
     }
     const fetchError = dockerLastError();
     if (fetchError) {
@@ -155,7 +161,7 @@ function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): Servi
     }
     const container = findContainer(containers, svc.containerNames);
     if (!container) {
-      return { ...base, status: "unknown", unavailableReason: "Container not found" };
+      return { ...base, status: "unknown", unavailableReason: "Conteneur introuvable" };
     }
     return {
       ...base,
@@ -168,14 +174,14 @@ function buildServiceStatus(svc: ServiceDef, containers: ContainerInfo[]): Servi
   }
 
   if (svc.id === "home-assistant") {
-    return { ...base, status: homeAssistantAvailable() ? "online" : "unknown", unavailableReason: homeAssistantAvailable() ? undefined : "Home Assistant integration not configured" };
+    return { ...base, status: homeAssistantAvailable() ? "online" : "unknown", unavailableReason: homeAssistantAvailable() ? undefined : "Intégration Home Assistant non configurée" };
   }
 
   if (svc.id === "truenas") {
-    return { ...base, status: truenasAvailable() ? "online" : "unknown", unavailableReason: truenasAvailable() ? undefined : "TrueNAS integration not configured" };
+    return { ...base, status: truenasAvailable() ? "online" : "unknown", unavailableReason: truenasAvailable() ? undefined : "Intégration TrueNAS non configurée" };
   }
 
-  return { ...base, status: "unknown", unavailableReason: "No live data source bound yet" };
+  return { ...base, status: "unknown", unavailableReason: "Aucune source de données en direct associée" };
 }
 
 const CRITICAL_STATUSES: Status[] = ["offline"];
@@ -215,8 +221,8 @@ function reconcileAlerts(hosts: HostStatus[], services: ServiceStatus[]) {
       const affected = services.filter((s) => s.hostId === h.id && s.critical).map((s) => s.name);
       const message =
         affected.length > 0
-          ? `${h.name} is offline — ${affected.length} dependent service(s) affected: ${affected.join(", ")}`
-          : `${h.name} is offline`;
+          ? `${h.name} est hors ligne — ${affected.length} service(s) dépendant(s) touché(s) : ${affected.join(", ")}`
+          : `${h.name} est hors ligne`;
       raiseAlert(source, "critical", message);
     } else {
       eventsRepo.resolveAlertsBySource(source);
@@ -233,8 +239,8 @@ function reconcileAlerts(hosts: HostStatus[], services: ServiceStatus[]) {
     const affected = services.filter((s) => s.hostId === DOCKER_HOST_ID && s.critical).map((s) => s.name);
     const message =
       affected.length > 0
-        ? `Docker unreachable on ${dockerHost?.name ?? DOCKER_HOST_ID} — ${affected.length} service(s) affected: ${affected.join(", ")}`
-        : `Docker unreachable on ${dockerHost?.name ?? DOCKER_HOST_ID}`;
+        ? `Docker injoignable sur ${dockerHost?.name ?? DOCKER_HOST_ID} — ${affected.length} service(s) touché(s) : ${affected.join(", ")}`
+        : `Docker injoignable sur ${dockerHost?.name ?? DOCKER_HOST_ID}`;
     raiseAlert(dockerSource, "critical", message);
   } else {
     eventsRepo.resolveAlertsBySource(dockerSource);
@@ -247,9 +253,9 @@ function reconcileAlerts(hosts: HostStatus[], services: ServiceStatus[]) {
       // Already covered by the host/docker rollup alert above.
       eventsRepo.resolveAlertsBySource(source);
     } else if (s.critical && CRITICAL_STATUSES.includes(s.status)) {
-      raiseAlert(source, "critical", `${s.name} is offline`);
+      raiseAlert(source, "critical", `${s.name} est hors ligne`);
     } else if (s.critical && WARNING_STATUSES.includes(s.status)) {
-      raiseAlert(source, "warning", `${s.name} is degraded`);
+      raiseAlert(source, "warning", `${s.name} est dégradé`);
     } else {
       eventsRepo.resolveAlertsBySource(source);
     }

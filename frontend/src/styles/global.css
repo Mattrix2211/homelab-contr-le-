@@ -286,6 +286,8 @@ button {
 
 /* ---------- Status badge ---------- */
 .status-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -402,7 +404,7 @@ button {
 }
 .host-card__metrics {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: var(--space-2) var(--space-3);
   margin-top: var(--space-3);
 }
@@ -413,6 +415,12 @@ button {
 }
 .metric-row__label {
   color: var(--color-text-tertiary);
+}
+.metric-row {
+  gap: var(--space-2);
+}
+.metric-row__value {
+  white-space: nowrap;
 }
 .metric-row__value.warn { color: var(--color-amber); }
 .metric-row__value.crit { color: var(--color-red); }

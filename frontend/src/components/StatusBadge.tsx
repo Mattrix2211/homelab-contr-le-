@@ -1,11 +1,11 @@
 import type { Status } from "../api/types";
 
 const LABELS: Record<Status, string> = {
-  online: "Online",
-  degraded: "Degraded",
-  warning: "Warning",
-  offline: "Offline",
-  unknown: "Unknown",
+  online: "En ligne",
+  degraded: "Dégradé",
+  warning: "Alerte",
+  offline: "Hors ligne",
+  unknown: "Inconnu",
 };
 
 export function StatusBadge({ status, label }: { status: Status; label?: string }) {

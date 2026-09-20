@@ -44,11 +44,11 @@ export function Infrastructure() {
       <div className="page__header">
         <div>
           <div className="page__title">Infrastructure</div>
-          <div className="page__subtitle">Physical topology and machine detail</div>
+          <div className="page__subtitle">Topologie physique et détail des machines</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className={`btn btn--sm ${view === "topology" ? "btn--primary" : "btn--ghost"}`} onClick={() => setView("topology")}>
-            Topology
+            Topologie
           </button>
           <button className={`btn btn--sm ${view === "machines" ? "btn--primary" : "btn--ghost"}`} onClick={() => setView("machines")}>
             Machines
@@ -86,7 +86,7 @@ export function Infrastructure() {
             </div>
           </div>
           <div className="text-tertiary" style={{ fontSize: 12, textAlign: "center", marginTop: 8 }}>
-            Click a node to inspect it. Colors reflect live status.
+            Cliquez sur un nœud pour l’inspecter. Les couleurs reflètent l’état en direct.
           </div>
         </div>
       ) : isLoading ? (
@@ -109,11 +109,11 @@ export function Infrastructure() {
           <div className="drawer__section">
             <DrawerMetricRow label="CPU" value={formatPercent(openHost.cpuPercent)} />
             <DrawerMetricRow label="RAM" value={formatPercent(openHost.ramPercent)} />
-            <DrawerMetricRow label="Uptime" value={formatUptime(openHost.uptimeSeconds)} />
+            <DrawerMetricRow label="Actif depuis" value={formatUptime(openHost.uptimeSeconds)} />
           </div>
           {openHostServices.length > 0 && (
             <div className="drawer__section">
-              <div className="section-title" style={{ marginBottom: 8 }}>Services on this host</div>
+              <div className="section-title" style={{ marginBottom: 8 }}>Services sur cette machine</div>
               <div className="row-list">
                 {openHostServices.map((s) => (
                   <div className="row" key={s.id}>
@@ -126,9 +126,9 @@ export function Infrastructure() {
           )}
           {openHostId === "m83" && (
             <div className="drawer__section">
-              <div className="section-title" style={{ marginBottom: 8 }}>Virtual machines & LXC</div>
+              <div className="section-title" style={{ marginBottom: 8 }}>Machines virtuelles et LXC</div>
               {openHostGuests.length === 0 ? (
-                <EmptyState title="No VM/LXC data" description="Configure PROXMOX_ENABLED and credentials to manage guests here." />
+                <EmptyState title="Aucune donnée VM/LXC" description="Configurez PROXMOX_ENABLED et les identifiants pour gérer les invités ici." />
               ) : (
                 <div className="row-list">
                   {openHostGuests.map((g) => (

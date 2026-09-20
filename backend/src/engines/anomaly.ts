@@ -91,11 +91,11 @@ async function checkOne(hostId: string, hostName: string, instance: string, metr
   }
 
   const detectedAt = new Date().toISOString();
-  const direction = zScore > 0 ? "above" : "below";
+  const direction = zScore > 0 ? "au-dessus" : "en dessous";
   raiseAlert(
     source,
     "warning",
-    `${hostName} ${metric.label} is unusually ${direction} its baseline: ${current.toFixed(1)}% vs ${mean.toFixed(1)}% avg (z=${zScore.toFixed(1)})`
+    `${hostName} : ${metric.label} anormalement ${direction} de sa référence — ${current.toFixed(1)} % contre ${mean.toFixed(1)} % en moyenne (z=${zScore.toFixed(1)})`
   );
 
   return {

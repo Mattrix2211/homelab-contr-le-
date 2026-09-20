@@ -46,7 +46,7 @@ export function ResourceDrawer({
               </div>
             )}
           </div>
-          <button className="drawer__close" onClick={onClose} aria-label="Close">
+          <button className="drawer__close" onClick={onClose} aria-label="Fermer">
             ×
           </button>
         </div>

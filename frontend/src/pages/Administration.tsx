@@ -30,13 +30,18 @@ import type { TriggerKind, NotificationKind } from "../api/types";
 // Single source of truth for action labels shown across both panels below,
 // so a renamed action can't drift out of sync between the two forms.
 const ACTION_LABELS: Record<string, string> = {
-  "container.restart": "Restart container",
-  "container.start": "Start container",
-  "container.stop": "Stop container",
-  "guest.reboot": "Reboot VM/LXC",
-  "guest.start": "Start VM/LXC",
-  "homeassistant.restart": "Restart Home Assistant",
-  "backup.run": "Run backup",
+  "container.restart": "Redémarrer un conteneur",
+  "container.start": "Démarrer un conteneur",
+  "container.stop": "Arrêter un conteneur",
+  "guest.reboot": "Redémarrer une VM/LXC",
+  "guest.start": "Démarrer une VM/LXC",
+  "homeassistant.restart": "Redémarrer Home Assistant",
+  "backup.run": "Lancer une sauvegarde",
+};
+
+const TRIGGER_LABELS: Record<string, string> = {
+  service_down: "Service arrêté",
+  host_down: "Machine arrêtée",
 };
 
 const REMEDIATION_ACTION_KEYS = ["container.restart", "container.start", "guest.reboot", "guest.start", "homeassistant.restart"];
@@ -62,39 +67,39 @@ function AutomationRulesPanel() {
     if (!name || !triggerTarget || !actionTarget) return;
     try {
       await createRule.mutateAsync({ name, triggerKind, triggerTarget, triggerMinutes, actionKey, actionTarget, cooldownMinutes });
-      push("success", "Automation rule created");
+      push("success", "Règle d’automatisation créée");
       setShowForm(false);
       setName("");
       setTriggerTarget("");
       setActionTarget("");
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not create rule");
+      push("error", err instanceof Error ? err.message : "Impossible de créer la règle");
     }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Automation rules</div>
+        <div className="section-title">Règles d’automatisation</div>
         <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "+ Add rule"}
+          {showForm ? "Annuler" : "+ Ajouter une règle"}
         </button>
       </div>
       <p className="text-tertiary" style={{ fontSize: 12, marginBottom: 12 }}>
-        "If &lt;service/host&gt; stays down for N minutes, run &lt;action&gt;." Only level 1/2 actions are
-        available here — level 3 destructive actions are never automatable (section 21).
+        « Si &lt;service/machine&gt; reste arrêté pendant N minutes, exécuter &lt;action&gt;. » Seules les actions de
+        niveau 1/2 sont proposées ici — les actions destructrices de niveau 3 ne sont jamais automatisables (section 21).
       </p>
 
       {showForm && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-          <input placeholder="Rule name" value={name} onChange={(e) => setName(e.target.value)} className="mono" style={inputStyle} />
+          <input placeholder="Nom de la règle" value={name} onChange={(e) => setName(e.target.value)} className="mono" style={inputStyle} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <select value={triggerKind} onChange={(e) => setTriggerKind(e.target.value as TriggerKind)} style={selectStyle}>
-              <option value="service_down">Service down</option>
-              <option value="host_down">Host down</option>
+              <option value="service_down">Service arrêté</option>
+              <option value="host_down">Machine arrêtée</option>
             </select>
             <input
-              placeholder="trigger target id (e.g. frigate, m83)"
+              placeholder="id de la cible du déclencheur (ex. frigate, m83)"
               value={triggerTarget}
               onChange={(e) => setTriggerTarget(e.target.value)}
               style={inputStyle}
@@ -106,7 +111,7 @@ function AutomationRulesPanel() {
               onChange={(e) => setTriggerMinutes(Number(e.target.value))}
               style={{ ...inputStyle, width: 90 }}
             />
-            <span className="text-tertiary" style={{ alignSelf: "center", fontSize: 12 }}>minutes sustained</span>
+            <span className="text-tertiary" style={{ alignSelf: "center", fontSize: 12 }}>minutes d’affilée</span>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <select value={actionKey} onChange={(e) => setActionKey(e.target.value)} style={selectStyle}>
@@ -115,7 +120,7 @@ function AutomationRulesPanel() {
               ))}
             </select>
             <input
-              placeholder="action target (container id / qemu:100 / lxc:100)"
+              placeholder="cible de l’action (id de conteneur / qemu:100 / lxc:100)"
               value={actionTarget}
               onChange={(e) => setActionTarget(e.target.value)}
               style={inputStyle}
@@ -127,16 +132,16 @@ function AutomationRulesPanel() {
               onChange={(e) => setCooldownMinutes(Number(e.target.value))}
               style={{ ...inputStyle, width: 90 }}
             />
-            <span className="text-tertiary" style={{ alignSelf: "center", fontSize: 12 }}>cooldown minutes</span>
+            <span className="text-tertiary" style={{ alignSelf: "center", fontSize: 12 }}>minutes de délai entre deux exécutions</span>
           </div>
           <button className="btn btn--sm btn--primary" onClick={handleCreate} style={{ alignSelf: "flex-start" }}>
-            Save rule
+            Enregistrer la règle
           </button>
         </div>
       )}
 
       {rules.length === 0 ? (
-        <EmptyState title="No automation rules" />
+        <EmptyState title="Aucune règle d’automatisation" />
       ) : (
         <div className="row-list">
           {rules.map((r) => (
@@ -144,15 +149,15 @@ function AutomationRulesPanel() {
               <span className="row__primary">
                 {r.name}
                 <div className="row__secondary mono">
-                  {r.trigger_kind} · {r.trigger_target} ≥{r.trigger_minutes}m → {r.action_key} on {r.action_target}
+                  {TRIGGER_LABELS[r.trigger_kind] ?? r.trigger_kind} · {r.trigger_target} ≥{r.trigger_minutes} min → {ACTION_LABELS[r.action_key] ?? r.action_key} sur {r.action_target}
                 </div>
               </span>
-              <StatusBadge status={r.enabled ? "online" : "unknown"} label={r.enabled ? "Enabled" : "Disabled"} />
+              <StatusBadge status={r.enabled ? "online" : "unknown"} label={r.enabled ? "Activée" : "Désactivée"} />
               <div style={{ display: "flex", gap: 6 }}>
                 <button className="btn btn--sm btn--ghost" onClick={() => setEnabled.mutate({ id: r.id, enabled: !r.enabled })}>
-                  {r.enabled ? "Disable" : "Enable"}
+                  {r.enabled ? "Désactiver" : "Activer"}
                 </button>
-                <button className="btn btn--sm btn--ghost" onClick={() => removeRule.mutate(r.id)}>Remove</button>
+                <button className="btn btn--sm btn--ghost" onClick={() => removeRule.mutate(r.id)}>Supprimer</button>
               </div>
             </div>
           ))}
@@ -185,18 +190,18 @@ function NotificationChannelsPanel() {
   async function handleTest(id: string) {
     try {
       await testChannel.mutateAsync(id);
-      push("success", "Test notification sent");
+      push("success", "Notification de test envoyée");
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Test failed");
+      push("error", err instanceof Error ? err.message : "Échec du test");
     }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Notification channels</div>
+        <div className="section-title">Canaux de notification</div>
         <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "+ Add channel"}
+          {showForm ? "Annuler" : "+ Ajouter un canal"}
         </button>
       </div>
 
@@ -204,7 +209,7 @@ function NotificationChannelsPanel() {
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <select value={kind} onChange={(e) => setKind(e.target.value as NotificationKind)} style={selectStyle}>
             <option value="discord">Discord (webhook)</option>
-            <option value="homeassistant">Home Assistant (notify service → mobile)</option>
+            <option value="homeassistant">Home Assistant (service notify → mobile)</option>
           </select>
           <input
             placeholder={kind === "discord" ? "https://discord.com/api/webhooks/…" : "mobile_app_matthis_phone"}
@@ -214,15 +219,15 @@ function NotificationChannelsPanel() {
           />
           <select value={minSeverity} onChange={(e) => setMinSeverity(e.target.value as typeof minSeverity)} style={selectStyle}>
             <option value="info">Info+</option>
-            <option value="warning">Warning+</option>
-            <option value="critical">Critical only</option>
+            <option value="warning">Avertissement+</option>
+            <option value="critical">Critique uniquement</option>
           </select>
-          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Enregistrer</button>
         </div>
       )}
 
       {channels.length === 0 ? (
-        <EmptyState title="No notification channels" description="Add Discord or Home Assistant to get alerted outside the cockpit." />
+        <EmptyState title="Aucun canal de notification" description="Ajoutez Discord ou Home Assistant pour être alerté en dehors du cockpit." />
       ) : (
         <div className="row-list">
           {channels.map((c) => (
@@ -233,8 +238,8 @@ function NotificationChannelsPanel() {
               </span>
               <span className="mono text-tertiary" style={{ textTransform: "uppercase", fontSize: 11 }}>{c.min_severity}+</span>
               <div style={{ display: "flex", gap: 6 }}>
-                <button className="btn btn--sm btn--ghost" onClick={() => handleTest(c.id)}>Test</button>
-                <button className="btn btn--sm btn--ghost" onClick={() => removeChannel.mutate(c.id)}>Remove</button>
+                <button className="btn btn--sm btn--ghost" onClick={() => handleTest(c.id)}>Tester</button>
+                <button className="btn btn--sm btn--ghost" onClick={() => removeChannel.mutate(c.id)}>Supprimer</button>
               </div>
             </div>
           ))}
@@ -270,28 +275,28 @@ function QuickActionsAdminPanel() {
     if (!label || (needsTarget && !target)) return;
     try {
       await createQuickAction.mutateAsync({ label, actionKey, target: needsTarget ? target : "home-assistant" });
-      push("success", "Quick action pinned");
+      push("success", "Action rapide épinglée");
       setShowForm(false);
       setLabel("");
       setTarget("");
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not pin quick action");
+      push("error", err instanceof Error ? err.message : "Impossible d’épingler l’action rapide");
     }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Quick actions</div>
+        <div className="section-title">Actions rapides</div>
         <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "+ Pin quick action"}
+          {showForm ? "Annuler" : "+ Épingler une action rapide"}
         </button>
       </div>
 
       {showForm && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <input
-            placeholder="Label (e.g. Restart Frigate)"
+            placeholder="Nom (ex. Redémarrer Frigate)"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             style={{ ...inputStyle, flex: 1, minWidth: 160 }}
@@ -311,7 +316,7 @@ function QuickActionsAdminPanel() {
 
           {needsTarget && actionKey.startsWith("container.") && (
             <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
-              <option value="">Select container…</option>
+              <option value="">Choisir un conteneur…</option>
               {containers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -319,7 +324,7 @@ function QuickActionsAdminPanel() {
           )}
           {needsTarget && actionKey.startsWith("guest.") && (
             <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
-              <option value="">Select VM/LXC…</option>
+              <option value="">Choisir une VM/LXC…</option>
               {guests.map((g) => (
                 <option key={`${g.type}:${g.vmid}`} value={`${g.type}:${g.vmid}`}>{g.name} ({g.type} {g.vmid})</option>
               ))}
@@ -327,19 +332,19 @@ function QuickActionsAdminPanel() {
           )}
           {needsTarget && actionKey === "backup.run" && (
             <select value={target} onChange={(e) => setTarget(e.target.value)} style={selectStyle}>
-              <option value="">Select backup…</option>
+              <option value="">Choisir une sauvegarde…</option>
               {backups.map((b) => (
                 <option key={b.id} value={b.id}>{b.label}</option>
               ))}
             </select>
           )}
 
-          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Enregistrer</button>
         </div>
       )}
 
       {quickActions.length === 0 ? (
-        <EmptyState title="No quick actions pinned" description="Pin an action above to see it on the Cockpit." />
+        <EmptyState title="Aucune action rapide épinglée" description="Épinglez une action ci-dessus pour la voir sur le Cockpit." />
       ) : (
         <div className="row-list">
           {quickActions.map((qa) => (
@@ -349,7 +354,7 @@ function QuickActionsAdminPanel() {
                 <div className="row__secondary mono">{qa.action_key} → {qa.target}</div>
               </span>
               <button className="btn btn--sm btn--ghost" onClick={() => removeQuickAction.mutate(qa.id)}>
-                Remove
+                Supprimer
               </button>
             </div>
           ))}
@@ -378,14 +383,14 @@ function UsersPanel() {
     if (!email || !password || !displayName) return;
     try {
       await createUser.mutateAsync({ email, password, role, displayName });
-      push("success", `${displayName} created`);
+      push("success", `${displayName} créé`);
       setEmail("");
       setPassword("");
       setDisplayName("");
       setRoleField("viewer");
       setShowForm(false);
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not create user");
+      push("error", err instanceof Error ? err.message : "Impossible de créer l’utilisateur");
     }
   }
 
@@ -393,7 +398,7 @@ function UsersPanel() {
     try {
       await setRole.mutateAsync({ id, role: newRole });
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not change role");
+      push("error", err instanceof Error ? err.message : "Impossible de changer le rôle");
     }
   }
 
@@ -401,47 +406,47 @@ function UsersPanel() {
     try {
       await removeUser.mutateAsync(id);
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not remove user");
+      push("error", err instanceof Error ? err.message : "Impossible de supprimer l’utilisateur");
     }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Users</div>
+        <div className="section-title">Utilisateurs</div>
         <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? "Cancel" : "+ Add user"}
+          {showForm ? "Annuler" : "+ Ajouter un utilisateur"}
         </button>
       </div>
 
       {showForm && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <input
-            placeholder="Display name"
+            placeholder="Nom affiché"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             style={{ ...inputStyle, flex: 1, minWidth: 140 }}
           />
           <input
-            placeholder="Email"
+            placeholder="E-mail"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{ ...inputStyle, flex: 1, minWidth: 160 }}
           />
           <input
-            placeholder="Password (min. 8 chars)"
+            placeholder="Mot de passe (8 caractères min.)"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{ ...inputStyle, flex: 1, minWidth: 160 }}
           />
           <select value={role} onChange={(e) => setRoleField(e.target.value as Role)} style={selectStyle}>
-            <option value="viewer">Viewer</option>
-            <option value="operator">Operator</option>
+            <option value="viewer">Lecteur</option>
+            <option value="operator">Opérateur</option>
             <option value="admin">Admin</option>
           </select>
-          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Enregistrer</button>
         </div>
       )}
 
@@ -458,8 +463,8 @@ function UsersPanel() {
               disabled={u.id === currentUser?.id}
               style={{ ...selectStyle, fontSize: 12 }}
             >
-              <option value="viewer">Viewer</option>
-              <option value="operator">Operator</option>
+              <option value="viewer">Lecteur</option>
+              <option value="operator">Opérateur</option>
               <option value="admin">Admin</option>
             </select>
             <button
@@ -467,7 +472,7 @@ function UsersPanel() {
               onClick={() => handleRemove(u.id)}
               disabled={u.id === currentUser?.id}
             >
-              Remove
+              Supprimer
             </button>
           </div>
         ))}
@@ -496,28 +501,28 @@ export function Administration() {
       <div className="page__header">
         <div>
           <div className="page__title">Administration</div>
-          <div className="page__subtitle">Cockpit configuration and integrations</div>
+          <div className="page__subtitle">Configuration du cockpit et des intégrations</div>
         </div>
       </div>
 
       {!isAdmin ? (
-        <EmptyState title="Admin access required" description="Sign in with an admin account to manage integrations and users." />
+        <EmptyState title="Accès administrateur requis" description="Connectez-vous avec un compte administrateur pour gérer les intégrations et les utilisateurs." />
       ) : (
         <>
           <div className="card">
-            <div className="section-title" style={{ marginBottom: 12 }}>Integrations</div>
+            <div className="section-title" style={{ marginBottom: 12 }}>Intégrations</div>
             <div className="row-list">
               {integrations &&
                 Object.entries(integrations).map(([key, cfg]) => (
                   <div className="row" key={key}>
                     <span className="row__primary" style={{ textTransform: "capitalize" }}>{key}</span>
-                    <StatusBadge status={cfg.enabled ? "online" : "unknown"} label={cfg.enabled ? "Configured" : "Not configured"} />
+                    <StatusBadge status={cfg.enabled ? "online" : "unknown"} label={cfg.enabled ? "Configurée" : "Non configurée"} />
                   </div>
                 ))}
             </div>
             <p className="text-tertiary" style={{ fontSize: 12, marginTop: 12 }}>
-              Configure integrations via environment variables (see <code className="mono">.env.example</code>) and
-              restart the backend container. Secrets are never exposed to this UI (section 28).
+              Les intégrations se configurent via les variables d’environnement (voir <code className="mono">.env.example</code>), puis on
+              redémarre le conteneur backend. Les secrets ne sont jamais exposés dans cette interface (section 28).
             </p>
           </div>
 

@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(res.user);
       setCsrfToken(res.csrfToken);
     } catch (err) {
-      const message = err instanceof ApiError && err.status === 401 ? "Invalid email or password" : "Login failed";
+      const message = err instanceof ApiError && err.status === 401 ? "E-mail ou mot de passe incorrect" : "Échec de la connexion";
       setError(message);
       throw err;
     }

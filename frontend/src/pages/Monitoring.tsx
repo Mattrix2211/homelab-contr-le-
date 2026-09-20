@@ -13,9 +13,9 @@ function AnomaliesPanel() {
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Anomalies detected</div>
+        <div className="section-title">Anomalies détectées</div>
         <span className="text-tertiary" style={{ fontSize: 12.5 }}>
-          vs. {data?.checkedAt ? "14-day baseline" : "—"}
+          par rapport à {data?.checkedAt ? "la référence sur 14 jours" : "—"}
         </span>
       </div>
       <div className="row-list">
@@ -25,7 +25,7 @@ function AnomaliesPanel() {
               {a.hostName} · {a.metricLabel}
             </span>
             <span className="mono text-tertiary" style={{ width: 150 }}>
-              {a.current}% vs {a.baselineMean}% avg (z={a.zScore})
+              {a.current} % vs {a.baselineMean} % en moyenne (z={a.zScore})
             </span>
             <span className="mono text-tertiary" style={{ width: 90 }}>
               {formatRelativeTime(a.detectedAt)}
@@ -43,8 +43,8 @@ function UptimeKumaPanel() {
   if (data?.available === false) {
     return (
       <EmptyState
-        title="Uptime Kuma not configured"
-        description="Set UPTIME_KUMA_ENABLED=true, UPTIME_KUMA_URL and UPTIME_KUMA_API_KEY to pull monitor availability here."
+        title="Uptime Kuma non configuré"
+        description="Définissez UPTIME_KUMA_ENABLED=true, UPTIME_KUMA_URL et UPTIME_KUMA_API_KEY pour afficher ici la disponibilité des sondes."
       />
     );
   }
@@ -54,7 +54,7 @@ function UptimeKumaPanel() {
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
         <div className="section-title">Uptime Kuma</div>
-        <OpenLinkButton linkKey="uptimeKuma" label="Open Uptime Kuma" />
+        <OpenLinkButton linkKey="uptimeKuma" label="Ouvrir Uptime Kuma" />
       </div>
       <div className="row-list">
         {monitors.map((m) => (
@@ -75,8 +75,8 @@ const PERIODS: { label: string; minutes: number; step: number }[] = [
   { label: "1H", minutes: 60, step: 15 },
   { label: "6H", minutes: 360, step: 60 },
   { label: "24H", minutes: 1440, step: 300 },
-  { label: "7D", minutes: 10080, step: 1800 },
-  { label: "30D", minutes: 43200, step: 7200 },
+  { label: "7J", minutes: 10080, step: 1800 },
+  { label: "30J", minutes: 43200, step: 7200 },
 ];
 
 const METRICS = [
@@ -103,16 +103,16 @@ export function Monitoring() {
     <div className="page">
       <div className="page__header">
         <div>
-          <div className="page__title">Monitoring</div>
-          <div className="page__subtitle">Prometheus-backed metrics across the HomeLab</div>
+          <div className="page__title">Supervision</div>
+          <div className="page__subtitle">Métriques Prometheus sur l’ensemble du HomeLab</div>
         </div>
-        <OpenLinkButton linkKey="grafana" label="Open in Grafana" />
+        <OpenLinkButton linkKey="grafana" label="Ouvrir dans Grafana" />
       </div>
 
       {available?.available === false ? (
         <EmptyState
-          title="Prometheus is not configured"
-          description="Set PROMETHEUS_ENABLED=true and PROMETHEUS_URL in the backend environment to enable charts here."
+          title="Prometheus n’est pas configuré"
+          description="Définissez PROMETHEUS_ENABLED=true et PROMETHEUS_URL dans l’environnement du backend pour activer les graphiques."
         />
       ) : (
         <>
@@ -142,7 +142,7 @@ export function Monitoring() {
 
           <div className="card">
             {isLoading ? (
-              <EmptyState title="Loading…" />
+              <EmptyState title="Chargement…" />
             ) : (
               <MetricChart samples={rangeData?.samples ?? []} />
             )}

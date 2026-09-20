@@ -37,10 +37,10 @@ function SnapshotsPanel() {
     if (!dataset || !name) return;
     try {
       await createSnapshot.mutateAsync({ dataset, name });
-      push("success", `Snapshot ${name} created`);
+      push("success", `Snapshot ${name} créé`);
       setName("");
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Snapshot failed");
+      push("error", err instanceof Error ? err.message : "Échec du snapshot");
     }
   }
 
@@ -51,23 +51,23 @@ function SnapshotsPanel() {
       <div className="section-title" style={{ marginBottom: 12 }}>Snapshots</div>
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <input
-          placeholder="dataset (e.g. main/homeassistant)"
+          placeholder="dataset (ex. main/homeassistant)"
           value={dataset}
           onChange={(e) => setDataset(e.target.value)}
           style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
         />
         <input
-          placeholder="snapshot name"
+          placeholder="nom du snapshot"
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
         />
         <button className="btn btn--sm btn--primary" onClick={handleCreate} disabled={createSnapshot.isPending}>
-          Create snapshot
+          Créer un snapshot
         </button>
       </div>
       {snapshots.length === 0 ? (
-        <EmptyState title="No snapshots" />
+        <EmptyState title="Aucun snapshot" />
       ) : (
         <div className="row-list">
           {snapshots.slice(0, 30).map((s) => (
@@ -119,17 +119,17 @@ function BackupsPanel() {
       setTriggerUrl("");
       setShowForm(false);
     } catch (err) {
-      push("error", err instanceof Error ? err.message : "Could not create backup");
+      push("error", err instanceof Error ? err.message : "Impossible de créer la sauvegarde");
     }
   }
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
-        <div className="section-title">Backups (3-2-1)</div>
+        <div className="section-title">Sauvegardes (3-2-1)</div>
         {isAdmin && (
           <button className="btn btn--sm btn--ghost" onClick={() => setShowForm((v) => !v)}>
-            {showForm ? "Cancel" : "+ Add backup"}
+            {showForm ? "Annuler" : "+ Ajouter une sauvegarde"}
           </button>
         )}
       </div>
@@ -137,7 +137,7 @@ function BackupsPanel() {
       {isAdmin && showForm && (
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
           <input
-            placeholder="Label (e.g. Home Assistant)"
+            placeholder="Nom (ex. Home Assistant)"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
@@ -149,29 +149,29 @@ function BackupsPanel() {
           >
             <option value="homeassistant">Home Assistant</option>
             <option value="truenas-snapshot">TrueNAS snapshot</option>
-            <option value="custom">Custom (webhook)</option>
+            <option value="custom">Personnalisée (webhook)</option>
           </select>
           {kind === "custom" ? (
             <input
-              placeholder="https://trigger-url…"
+              placeholder="https://url-de-declenchement…"
               value={triggerUrl}
               onChange={(e) => setTriggerUrl(e.target.value)}
               style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
             />
           ) : (
             <input
-              placeholder="target reference"
+              placeholder="référence de la cible"
               value={targetRef}
               onChange={(e) => setTargetRef(e.target.value)}
               style={{ background: "var(--color-background)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-sm)", padding: "6px 10px", color: "var(--color-text-primary)", flex: 1, minWidth: 160 }}
             />
           )}
-          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Save</button>
+          <button className="btn btn--sm btn--primary" onClick={handleCreate}>Enregistrer</button>
         </div>
       )}
 
       {backups.length === 0 ? (
-        <EmptyState title="No backups tracked yet" description="An admin can add Home Assistant, TrueNAS or a custom backup runner above." />
+        <EmptyState title="Aucune sauvegarde suivie pour l’instant" description="Un administrateur peut ajouter ci-dessus Home Assistant, TrueNAS ou un lanceur de sauvegarde personnalisé." />
       ) : (
         <div className="row-list">
           {backups.map((b) => (
@@ -179,17 +179,17 @@ function BackupsPanel() {
               <span className="row__primary">
                 {b.label}
                 <div className="row__secondary">
-                  {b.last_run_at ? `Last backup: ${formatRelativeTime(b.last_run_at)}` : "Never run"}
+                  {b.last_run_at ? `Dernière sauvegarde : ${formatRelativeTime(b.last_run_at)}` : "Jamais exécutée"}
                 </div>
               </span>
               <StatusBadge
                 status={b.last_status === "success" ? "online" : b.last_status === "error" ? "offline" : "unknown"}
-                label={b.last_status ? b.last_status.toUpperCase() : "PENDING"}
+                label={b.last_status === "success" ? "SUCCÈS" : b.last_status === "error" ? "ÉCHEC" : "EN ATTENTE"}
               />
               <div style={{ display: "flex", gap: 6 }}>
-                {canRun && <ActionButton label="Run" level={1} onRun={() => runBackup.mutateAsync(b.id)} />}
+                {canRun && <ActionButton label="Lancer" level={1} onRun={() => runBackup.mutateAsync(b.id)} />}
                 {isAdmin && (
-                  <button className="btn btn--sm btn--ghost" onClick={() => removeBackup.mutate(b.id)}>Remove</button>
+                  <button className="btn btn--sm btn--ghost" onClick={() => removeBackup.mutate(b.id)}>Supprimer</button>
                 )}
               </div>
             </div>
@@ -218,10 +218,10 @@ export function Storage() {
     <div className="page">
       <div className="page__header">
         <div>
-          <div className="page__title">Storage</div>
-          <div className="page__subtitle">TrueNAS Scale · pools, disks, snapshots and backups</div>
+          <div className="page__title">Stockage</div>
+          <div className="page__subtitle">TrueNAS Scale · pools, disques, snapshots et sauvegardes</div>
         </div>
-        <OpenLinkButton linkKey="truenas" label="Open TrueNAS" />
+        <OpenLinkButton linkKey="truenas" label="Ouvrir TrueNAS" />
       </div>
 
       {hostLoading ? (
@@ -234,15 +234,15 @@ export function Storage() {
 
       {available?.available === false ? (
         <EmptyState
-          title="TrueNAS API not configured"
-          description="Set TRUENAS_ENABLED=true, TRUENAS_URL and TRUENAS_API_KEY to enable pools, disks, SMART and snapshots."
+          title="API TrueNAS non configurée"
+          description="Définissez TRUENAS_ENABLED=true, TRUENAS_URL et TRUENAS_API_KEY pour activer pools, disques, SMART et snapshots."
         />
       ) : (
         <>
           <div>
             <div className="section-title" style={{ marginBottom: 12 }}>Pools</div>
             {pools.length === 0 ? (
-              <EmptyState title="No pools reported" />
+              <EmptyState title="Aucun pool remonté" />
             ) : (
               <div className="grid grid--hosts">
                 {pools.map((p) => (
@@ -252,8 +252,8 @@ export function Storage() {
                     onScrub={() =>
                       runScrub
                         .mutateAsync(p.id)
-                        .then(() => push("success", `Scrub started on ${p.name}`))
-                        .catch((err) => push("error", err instanceof Error ? err.message : "Scrub failed"))
+                        .then(() => push("success", `Scrub lancé sur ${p.name}`))
+                        .catch((err) => push("error", err instanceof Error ? err.message : "Échec du scrub"))
                     }
                   />
                 ))}
@@ -269,7 +269,7 @@ export function Storage() {
                   <div className="row" key={d.id}>
                     <span className="row__primary mono">{d.name}</span>
                     <span className="mono text-tertiary" style={{ width: 100 }}>{formatBytes(d.usedBytes)}</span>
-                    <span className="mono text-tertiary" style={{ width: 100, textAlign: "right" }}>{formatBytes(d.availableBytes)} free</span>
+                    <span className="mono text-tertiary" style={{ width: 100, textAlign: "right" }}>{formatBytes(d.availableBytes)} libres</span>
                   </div>
                 ))}
               </div>
@@ -277,9 +277,9 @@ export function Storage() {
           )}
 
           <div>
-            <div className="section-title" style={{ marginBottom: 12 }}>Disks</div>
+            <div className="section-title" style={{ marginBottom: 12 }}>Disques</div>
             {disks.length === 0 ? (
-              <EmptyState title="No disk data" />
+              <EmptyState title="Aucune donnée de disque" />
             ) : (
               <div className="grid grid--hosts">
                 {disks.map((d) => (

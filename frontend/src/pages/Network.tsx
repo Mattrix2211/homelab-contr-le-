@@ -19,36 +19,36 @@ function AdGuardPanel() {
   const toggle = useToggleAdGuardProtection();
 
   if (data?.available === false) {
-    return <EmptyState title="AdGuard API not configured" description="Set ADGUARD_ENABLED=true and ADGUARD_URL to see query stats." />;
+    return <EmptyState title="API AdGuard non configurée" description="Définissez ADGUARD_ENABLED=true et ADGUARD_URL pour voir les statistiques de requêtes." />;
   }
   const stats = data?.stats;
-  if (!stats) return <EmptyState title="Loading AdGuard stats…" />;
+  if (!stats) return <EmptyState title="Chargement des statistiques AdGuard…" />;
 
   return (
     <div className="card">
       <div className="page__header" style={{ marginBottom: 12 }}>
         <div className="section-title">AdGuard DNS</div>
         <ActionButton
-          label={stats.protectionEnabled ? "Disable protection" : "Enable protection"}
+          label={stats.protectionEnabled ? "Désactiver la protection" : "Activer la protection"}
           level={2}
-          confirmBody="Temporarily changes DNS filtering for the whole network."
+          confirmBody="Modifie temporairement le filtrage DNS pour tout le réseau."
           onRun={() => toggle.mutateAsync(!stats.protectionEnabled)}
         />
       </div>
       <div className="grid grid--metrics">
-        <MetricCard label="DNS queries" value={stats.numDnsQueries.toLocaleString()} />
-        <MetricCard label="Blocked" value={stats.numBlockedFiltering.toLocaleString()} />
-        <MetricCard label="Block rate" value={formatPercent(stats.blockedPercent)} />
-        <MetricCard label="Protection" value={stats.protectionEnabled ? "ON" : "OFF"} tone={stats.protectionEnabled ? undefined : "warn"} />
+        <MetricCard label="Requêtes DNS" value={stats.numDnsQueries.toLocaleString()} />
+        <MetricCard label="Bloquées" value={stats.numBlockedFiltering.toLocaleString()} />
+        <MetricCard label="Taux de blocage" value={formatPercent(stats.blockedPercent)} />
+        <MetricCard label="Protection" value={stats.protectionEnabled ? "ACTIVE" : "INACTIVE"} tone={stats.protectionEnabled ? undefined : "warn"} />
       </div>
       {stats.topClients.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>Top clients</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>Clients les plus actifs</div>
           <div className="row-list">
             {stats.topClients.map((c) => (
               <div className="row" key={c.name}>
                 <span className="row__primary mono">{c.name}</span>
-                <span className="mono text-tertiary">{c.count.toLocaleString()} queries</span>
+                <span className="mono text-tertiary">{c.count.toLocaleString()} requêtes</span>
               </div>
             ))}
           </div>
@@ -63,7 +63,7 @@ function NpmPanel() {
   const { data: certsData } = useNpmCertificates();
 
   if (proxiesData?.available === false) {
-    return <EmptyState title="Nginx Proxy Manager API not configured" description="Set NPM_ENABLED=true, NPM_URL, NPM_IDENTITY and NPM_SECRET." />;
+    return <EmptyState title="API Nginx Proxy Manager non configurée" description="Définissez NPM_ENABLED=true, NPM_URL, NPM_IDENTITY et NPM_SECRET." />;
   }
 
   const proxies = proxiesData?.proxies ?? [];
@@ -73,14 +73,14 @@ function NpmPanel() {
     <div className="card">
       <div className="section-title" style={{ marginBottom: 12 }}>Nginx Proxy Manager</div>
       {proxies.length === 0 ? (
-        <EmptyState title="No proxy hosts" />
+        <EmptyState title="Aucun hôte proxy" />
       ) : (
         <div className="row-list">
           {proxies.map((p) => (
             <div className="row" key={p.id}>
               <span className="row__primary mono">{p.domainNames.join(", ")}</span>
               <span className="mono text-tertiary">→ {p.forwardHost}:{p.forwardPort}</span>
-              <StatusBadge status={p.enabled ? "online" : "offline"} label={p.enabled ? "Enabled" : "Disabled"} />
+              <StatusBadge status={p.enabled ? "online" : "offline"} label={p.enabled ? "Activé" : "Désactivé"} />
             </div>
           ))}
         </div>
@@ -88,7 +88,7 @@ function NpmPanel() {
 
       {certs.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <div className="section-title" style={{ marginBottom: 8 }}>Certificates</div>
+          <div className="section-title" style={{ marginBottom: 8 }}>Certificats</div>
           <div className="row-list">
             {certs.map((c) => {
               const days = daysUntil(c.expiresAt);
@@ -100,7 +100,7 @@ function NpmPanel() {
                     <div className="row__secondary mono">{c.domainNames.join(", ")}</div>
                   </span>
                   <span className={`mono ${warn ? "" : "text-tertiary"}`} style={{ color: warn ? "var(--color-amber)" : undefined }}>
-                    {days !== null ? `expires in ${days}d` : "—"}
+                    {days !== null ? `expire dans ${days} j` : "—"}
                   </span>
                 </div>
               );
@@ -115,26 +115,26 @@ function NpmPanel() {
 function WireguardPanel() {
   const { data } = useWireguardPeers();
   if (data?.available === false) {
-    return <EmptyState title="WireGuard (wg-easy) API not configured" description="Set WIREGUARD_ENABLED=true, WIREGUARD_URL and WIREGUARD_PASSWORD." />;
+    return <EmptyState title="API WireGuard (wg-easy) non configurée" description="Définissez WIREGUARD_ENABLED=true, WIREGUARD_URL et WIREGUARD_PASSWORD." />;
   }
   const peers = data?.peers ?? [];
   return (
     <div className="card">
-      <div className="section-title" style={{ marginBottom: 12 }}>VPN — WireGuard peers</div>
+      <div className="section-title" style={{ marginBottom: 12 }}>VPN — pairs WireGuard</div>
       {peers.length === 0 ? (
-        <EmptyState title="No peers configured" />
+        <EmptyState title="Aucun pair configuré" />
       ) : (
         <div className="row-list">
           {peers.map((p) => (
             <div className="row" key={p.id}>
               <span className="row__primary">{p.name}</span>
               <span className="mono text-tertiary" style={{ width: 140 }}>
-                {p.lastHandshakeAt ? formatRelativeTime(p.lastHandshakeAt) : "never connected"}
+                {p.lastHandshakeAt ? formatRelativeTime(p.lastHandshakeAt) : "jamais connecté"}
               </span>
               <span className="mono text-tertiary" style={{ width: 140 }}>
                 ↓{formatBytes(p.transferRxBytes)} ↑{formatBytes(p.transferTxBytes)}
               </span>
-              <StatusBadge status={p.connected ? "online" : "unknown"} label={p.connected ? "Connected" : "Idle"} />
+              <StatusBadge status={p.connected ? "online" : "unknown"} label={p.connected ? "Connecté" : "Inactif"} />
             </div>
           ))}
         </div>
@@ -151,17 +151,17 @@ export function Network() {
     <div className="page">
       <div className="page__header">
         <div>
-          <div className="page__title">Network</div>
-          <div className="page__subtitle">DNS, reverse proxy, VPN and connectivity</div>
+          <div className="page__title">Réseau</div>
+          <div className="page__subtitle">DNS, reverse proxy, VPN et connectivité</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <OpenLinkButton linkKey="adguard" label="Open AdGuard" />
-          <OpenLinkButton linkKey="npm" label="Open NPM" />
+          <OpenLinkButton linkKey="adguard" label="Ouvrir AdGuard" />
+          <OpenLinkButton linkKey="npm" label="Ouvrir NPM" />
         </div>
       </div>
 
       {services.length === 0 ? (
-        <EmptyState title="No network services detected" description="Check the Docker integration in Administration." />
+        <EmptyState title="Aucun service réseau détecté" description="Vérifiez l’intégration Docker (voir Administration)." />
       ) : (
         <div className="grid grid--services">
           {services.map((s) => (

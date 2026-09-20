@@ -22,20 +22,20 @@ export interface ActionDefinition {
 // shutdown/reboot and destructive storage operations are exposed as
 // "Open native UI" links instead, never as a POST handler here.
 export const ACTIONS: Record<string, ActionDefinition> = {
-  "container.start": { key: "container.start", label: "Start container", level: 1, minRole: "operator" },
-  "container.stop": { key: "container.stop", label: "Stop container", level: 2, minRole: "operator" },
-  "container.restart": { key: "container.restart", label: "Restart container", level: 2, minRole: "operator" },
-  "container.pause": { key: "container.pause", label: "Pause container", level: 2, minRole: "operator" },
-  "container.unpause": { key: "container.unpause", label: "Unpause container", level: 1, minRole: "operator" },
-  "guest.start": { key: "guest.start", label: "Start VM/LXC", level: 1, minRole: "operator" },
-  "guest.shutdown": { key: "guest.shutdown", label: "Shutdown VM/LXC", level: 2, minRole: "operator" },
-  "guest.reboot": { key: "guest.reboot", label: "Reboot VM/LXC", level: 2, minRole: "operator" },
-  "homeassistant.restart": { key: "homeassistant.restart", label: "Restart Home Assistant", level: 2, minRole: "operator" },
+  "container.start": { key: "container.start", label: "Démarrer un conteneur", level: 1, minRole: "operator" },
+  "container.stop": { key: "container.stop", label: "Arrêter un conteneur", level: 2, minRole: "operator" },
+  "container.restart": { key: "container.restart", label: "Redémarrer un conteneur", level: 2, minRole: "operator" },
+  "container.pause": { key: "container.pause", label: "Mettre un conteneur en pause", level: 2, minRole: "operator" },
+  "container.unpause": { key: "container.unpause", label: "Reprendre un conteneur", level: 1, minRole: "operator" },
+  "guest.start": { key: "guest.start", label: "Démarrer une VM/LXC", level: 1, minRole: "operator" },
+  "guest.shutdown": { key: "guest.shutdown", label: "Éteindre une VM/LXC", level: 2, minRole: "operator" },
+  "guest.reboot": { key: "guest.reboot", label: "Redémarrer une VM/LXC", level: 2, minRole: "operator" },
+  "homeassistant.restart": { key: "homeassistant.restart", label: "Redémarrer Home Assistant", level: 2, minRole: "operator" },
   "truenas.smart-test": { key: "truenas.smart-test", label: "Run SMART test", level: 1, minRole: "operator" },
   "truenas.scrub": { key: "truenas.scrub", label: "Run scrub", level: 2, minRole: "operator" },
-  "truenas.snapshot-create": { key: "truenas.snapshot-create", label: "Create snapshot", level: 1, minRole: "operator" },
+  "truenas.snapshot-create": { key: "truenas.snapshot-create", label: "Créer un snapshot", level: 1, minRole: "operator" },
   "backup.run": { key: "backup.run", label: "Run backup", level: 1, minRole: "operator" },
-  "adguard.protection-toggle": { key: "adguard.protection-toggle", label: "Toggle DNS protection", level: 2, minRole: "operator" },
+  "adguard.protection-toggle": { key: "adguard.protection-toggle", label: "Basculer la protection DNS", level: 2, minRole: "operator" },
 };
 
 const ROLE_RANK: Record<Role, number> = { viewer: 1, operator: 2, admin: 3 };
@@ -113,7 +113,7 @@ export async function runAction<T>(
       category: "action",
       severity: "info",
       source: ctx.userDisplayName,
-      message: `${def.label} on ${target}`,
+      message: `${def.label} sur ${target}`,
       metadata: { actionKey, target, durationMs },
     });
     return result;

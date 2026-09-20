@@ -11,6 +11,7 @@ import { HomeAssistant } from "./pages/HomeAssistant";
 import { Monitoring } from "./pages/Monitoring";
 import { Events } from "./pages/Events";
 import { Administration } from "./pages/Administration";
+import { Settings } from "./pages/Settings";
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/events" element={<Events />} />
         <Route path="/administration" element={<Administration />} />
+        <Route path="/parametres" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

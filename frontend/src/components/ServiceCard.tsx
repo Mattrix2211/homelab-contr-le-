@@ -1,5 +1,5 @@
 import type { ServiceStatus } from "../api/types";
-import { cpuCoresHint, formatMb, formatPercent, formatUptime } from "../lib/format";
+import { cpuCoresHint, formatCategory, formatMb, formatPercent, formatUptime } from "../lib/format";
 import { StatusBadge } from "./StatusBadge";
 
 export function ServiceCard({ service, onClick }: { service: ServiceStatus; onClick?: () => void }) {
@@ -8,7 +8,7 @@ export function ServiceCard({ service, onClick }: { service: ServiceStatus; onCl
       <div className="host-card__header">
         <div>
           <div className="host-card__name">{service.name}</div>
-          <div className="host-card__role">{service.category}</div>
+          <div className="host-card__role">{formatCategory(service.category)}</div>
         </div>
         <StatusBadge status={service.status} />
       </div>
@@ -21,7 +21,7 @@ export function ServiceCard({ service, onClick }: { service: ServiceStatus; onCl
         <div className="host-card__metrics">
           <div className="metric-row">
             <span className="metric-row__label">CPU</span>
-            <span className="metric-row__value" title="Docker CPU: 100% = one full core">
+            <span className="metric-row__value" title="CPU Docker : 100 % = un cœur complet">
               {formatPercent(service.cpuPercent)}
               {cpuCoresHint(service.cpuPercent) && <span className="metric-row__hint">{cpuCoresHint(service.cpuPercent)}</span>}
             </span>
@@ -31,7 +31,7 @@ export function ServiceCard({ service, onClick }: { service: ServiceStatus; onCl
             <span className="metric-row__value">{formatMb(service.ramMb)}</span>
           </div>
           <div className="metric-row">
-            <span className="metric-row__label">Uptime</span>
+            <span className="metric-row__label">Actif depuis</span>
             <span className="metric-row__value">{formatUptime(service.uptimeSeconds)}</span>
           </div>
         </div>

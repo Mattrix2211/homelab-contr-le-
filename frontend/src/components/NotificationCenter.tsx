@@ -47,7 +47,7 @@ export function NotificationCenter() {
             }}
           >
             {events.length === 0 ? (
-              <div className="empty-state" style={{ padding: 24 }}>Nothing yet</div>
+              <div className="empty-state" style={{ padding: 24 }}>Rien pour le moment</div>
             ) : (
               <div className="row-list">
                 {events.slice(0, 20).map((e) => (

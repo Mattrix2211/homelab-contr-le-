@@ -7,7 +7,7 @@ export function MetricChart({ samples, height = 220 }: { samples: Sample[]; heig
   if (samples.length < 2) {
     return (
       <div className="empty-state" style={{ height }}>
-        No data points for this range yet.
+        Pas encore de données pour cette période.
       </div>
     );
   }

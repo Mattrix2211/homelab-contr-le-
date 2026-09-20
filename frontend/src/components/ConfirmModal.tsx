@@ -4,7 +4,7 @@ import { useEscapeKey } from "../lib/useEscapeKey";
 export function ConfirmModal({
   title,
   body,
-  confirmLabel = "Confirm",
+  confirmLabel = "Confirmer",
   critical,
   loading,
   onConfirm,
@@ -41,10 +41,10 @@ export function ConfirmModal({
         <div id="confirm-modal-body" className="modal__body">{body}</div>
         <div className="modal__actions">
           <button className="btn btn--ghost" onClick={onCancel} disabled={loading}>
-            Cancel
+            Annuler
           </button>
           <button className={`btn ${critical ? "btn--danger" : "btn--primary"}`} onClick={onConfirm} disabled={loading}>
-            {loading ? "Working…" : confirmLabel}
+            {loading ? "En cours…" : confirmLabel}
           </button>
         </div>
       </div>

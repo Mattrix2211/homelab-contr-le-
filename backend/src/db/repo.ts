@@ -325,6 +325,7 @@ export const notificationChannelsRepo = {
 export interface UserPreferencesRow {
   user_id: string;
   cockpit_layout: string | null;
+  display_settings: string | null;
   notifications_last_seen_at: string | null;
   updated_at: string;
 }
@@ -340,6 +341,12 @@ export const userPreferencesRepo = {
       `INSERT INTO user_preferences (user_id, cockpit_layout, updated_at) VALUES (?, ?, datetime('now'))
        ON CONFLICT(user_id) DO UPDATE SET cockpit_layout = excluded.cockpit_layout, updated_at = datetime('now')`
     ).run(userId, JSON.stringify(layout));
+  },
+  setDisplaySettings(userId: string, settings: unknown) {
+    db.prepare(
+      `INSERT INTO user_preferences (user_id, display_settings, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(user_id) DO UPDATE SET display_settings = excluded.display_settings, updated_at = datetime('now')`
+    ).run(userId, JSON.stringify(settings));
   },
   markNotificationsSeen(userId: string) {
     db.prepare(

@@ -5,12 +5,13 @@ const NAV = [
   { index: "01", label: "Cockpit", path: "/" },
   { index: "02", label: "Infrastructure", path: "/infrastructure" },
   { index: "03", label: "Services", path: "/services" },
-  { index: "04", label: "Storage", path: "/storage" },
-  { index: "05", label: "Network", path: "/network" },
+  { index: "04", label: "Stockage", path: "/storage" },
+  { index: "05", label: "Réseau", path: "/network" },
   { index: "06", label: "Home Assistant", path: "/home-assistant" },
-  { index: "07", label: "Monitoring", path: "/monitoring" },
-  { index: "08", label: "Events", path: "/events" },
+  { index: "07", label: "Supervision", path: "/monitoring" },
+  { index: "08", label: "Événements", path: "/events" },
   { index: "09", label: "Administration", path: "/administration" },
+  { index: "10", label: "Paramètres", path: "/parametres" },
 ];
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate?: () => void }) {
@@ -41,7 +42,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate?: () =
           {user?.displayName} · <span className="mono">{user?.role}</span>
         </div>
         <button className="btn btn--ghost btn--sm" onClick={() => logout()}>
-          Logout
+          Déconnexion
         </button>
       </div>
     </aside>

@@ -29,22 +29,22 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         <input
           ref={inputRef}
           className="palette__input"
-          placeholder="Search hosts, services, containers, pages…"
+          placeholder="Rechercher machines, services, conteneurs, pages…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="palette__results">
           {!query && (
-            <div className="palette__empty">Type to search the HomeLab — try "frigate", "proxmox", or "storage".</div>
+            <div className="palette__empty">Tapez pour chercher dans le HomeLab — essayez « frigate », « proxmox » ou « stockage ».</div>
           )}
-          {query && !hasResults && <div className="palette__empty">No matches for "{query}"</div>}
+          {query && !hasResults && <div className="palette__empty">Aucun résultat pour « {query} »</div>}
 
           {data && data.pages.length > 0 && (
             <>
               <div className="palette__group-label">Pages</div>
               {data.pages.map((p) => (
                 <div key={p.id} className="palette__item" onClick={() => go(p.path)}>
-                  <span>Go to {p.label}</span>
+                  <span>Aller à {p.label}</span>
                 </div>
               ))}
             </>
@@ -52,7 +52,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
 
           {data && data.hosts.length > 0 && (
             <>
-              <div className="palette__group-label">Hosts</div>
+              <div className="palette__group-label">Machines</div>
               {data.hosts.map((h) => (
                 <div key={h.id} className="palette__item" onClick={() => go("/infrastructure")}>
                   <span>{h.name}</span>
@@ -75,7 +75,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
 
           {data && data.containers.length > 0 && (
             <>
-              <div className="palette__group-label">Containers</div>
+              <div className="palette__group-label">Conteneurs</div>
               {data.containers.map((c) => (
                 <div key={c.id} className="palette__item" onClick={() => go("/services")}>
                   <span>{c.name}</span>

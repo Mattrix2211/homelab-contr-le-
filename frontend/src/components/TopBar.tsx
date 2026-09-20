@@ -14,11 +14,11 @@ export function TopBar({
   return (
     <header className="topbar">
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button className="btn btn--ghost btn--sm" onClick={onToggleSidebar} aria-label="Toggle navigation">
+        <button className="btn btn--ghost btn--sm" onClick={onToggleSidebar} aria-label="Afficher/masquer la navigation">
           ☰
         </button>
         <button className="topbar__search" onClick={onOpenPalette}>
-          <span>Search hosts, services, containers…</span>
+          <span>Rechercher machines, services, conteneurs…</span>
           <kbd>Ctrl K</kbd>
         </button>
       </div>
@@ -26,7 +26,7 @@ export function TopBar({
         {alertCount > 0 && (
           <span className="status-badge status-badge--warning">
             <span className="status-badge__dot" />
-            {alertCount} alert{alertCount > 1 ? "s" : ""}
+            {alertCount} alerte{alertCount > 1 ? "s" : ""}
           </span>
         )}
         <NotificationCenter />

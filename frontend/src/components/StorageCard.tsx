@@ -10,26 +10,26 @@ export function StorageCard({ pool, onScrub }: { pool: Pool; onScrub?: () => voi
         <div>
           <div className="host-card__name">POOL {pool.name.toUpperCase()}</div>
         </div>
-        <StatusBadge status={pool.healthy ? "online" : "offline"} label={pool.healthy ? "Healthy" : "Degraded"} />
+        <StatusBadge status={pool.healthy ? "online" : "offline"} label={pool.healthy ? "Sain" : "Dégradé"} />
       </div>
       <div className="host-card__metrics">
         <div className="metric-row">
-          <span className="metric-row__label">Used</span>
+          <span className="metric-row__label">Utilisé</span>
           <span className="metric-row__value">{formatBytes(pool.usedBytes)}</span>
         </div>
         <div className="metric-row">
-          <span className="metric-row__label">Free</span>
+          <span className="metric-row__label">Libre</span>
           <span className="metric-row__value">{formatBytes(pool.totalBytes - pool.usedBytes)}</span>
         </div>
         <div className="metric-row">
-          <span className="metric-row__label">Usage</span>
+          <span className="metric-row__label">Occupation</span>
           <span className="metric-row__value">{formatPercent(usagePercent)}</span>
         </div>
       </div>
       {onScrub && (
         <div style={{ marginTop: 12 }}>
           <button className="btn btn--sm btn--ghost" onClick={onScrub}>
-            Run scrub
+            Lancer un scrub
           </button>
         </div>
       )}
